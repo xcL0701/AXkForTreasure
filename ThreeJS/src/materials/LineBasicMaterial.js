@@ -1,13 +1,22 @@
 import { Material } from './Material.js';
 import { Color } from '../math/Color.js';
 
+/**
+ * parameters = {
+ *  color: <hex>,
+ *  opacity: <float>,
+ *
+ *  linewidth: <float>,
+ *  linecap: "round",
+ *  linejoin: "round"
+ * }
+ */
+
 class LineBasicMaterial extends Material {
 
 	constructor( parameters ) {
 
 		super();
-
-		this.isLineBasicMaterial = true;
 
 		this.type = 'LineBasicMaterial';
 
@@ -17,7 +26,7 @@ class LineBasicMaterial extends Material {
 		this.linecap = 'round';
 		this.linejoin = 'round';
 
-		this.fog = true;
+		this.morphTargets = false;
 
 		this.setValues( parameters );
 
@@ -34,12 +43,14 @@ class LineBasicMaterial extends Material {
 		this.linecap = source.linecap;
 		this.linejoin = source.linejoin;
 
-		this.fog = source.fog;
+		this.morphTargets = source.morphTargets;
 
 		return this;
 
 	}
 
 }
+
+LineBasicMaterial.prototype.isLineBasicMaterial = true;
 
 export { LineBasicMaterial };

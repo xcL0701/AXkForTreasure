@@ -1,4 +1,4 @@
-import { Box3, Vector3 } from 'three';
+import { Box3, Vector3 } from '../../build/three.module.js';
 
 import { UIPanel, UIRow, UIHorizontalRule } from './libs/ui.js';
 
@@ -8,23 +8,23 @@ import { SetPositionCommand } from './commands/SetPositionCommand.js';
 
 function MenubarEdit( editor ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const container = new UIPanel();
+	var container = new UIPanel();
 	container.setClass( 'menu' );
 
-	const title = new UIPanel();
+	var title = new UIPanel();
 	title.setClass( 'title' );
 	title.setTextContent( strings.getKey( 'menubar/edit' ) );
 	container.add( title );
 
-	const options = new UIPanel();
+	var options = new UIPanel();
 	options.setClass( 'options' );
 	container.add( options );
 
 	// Undo
 
-	const undo = new UIRow();
+	var undo = new UIRow();
 	undo.setClass( 'option' );
 	undo.setTextContent( strings.getKey( 'menubar/edit/undo' ) );
 	undo.onClick( function () {
@@ -36,7 +36,7 @@ function MenubarEdit( editor ) {
 
 	// Redo
 
-	const redo = new UIRow();
+	var redo = new UIRow();
 	redo.setClass( 'option' );
 	redo.setTextContent( strings.getKey( 'menubar/edit/redo' ) );
 	redo.onClick( function () {
@@ -48,7 +48,7 @@ function MenubarEdit( editor ) {
 
 	// Clear History
 
-	let option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/edit/clear_history' ) );
 	option.onClick( function () {
@@ -65,7 +65,7 @@ function MenubarEdit( editor ) {
 
 	editor.signals.historyChanged.add( function () {
 
-		const history = editor.history;
+		var history = editor.history;
 
 		undo.setClass( 'option' );
 		redo.setClass( 'option' );
@@ -90,12 +90,12 @@ function MenubarEdit( editor ) {
 
 	// Center
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/edit/center' ) );
 	option.onClick( function () {
 
-		const object = editor.selected;
+		var object = editor.selected;
 
 		if ( object === null || object.parent === null ) return; // avoid centering the camera or scene
 
@@ -114,12 +114,12 @@ function MenubarEdit( editor ) {
 
 	// Clone
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/edit/clone' ) );
 	option.onClick( function () {
 
-		let object = editor.selected;
+		var object = editor.selected;
 
 		if ( object === null || object.parent === null ) return; // avoid cloning the camera or scene
 
@@ -132,12 +132,12 @@ function MenubarEdit( editor ) {
 
 	// Delete
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/edit/delete' ) );
 	option.onClick( function () {
 
-		const object = editor.selected;
+		var object = editor.selected;
 
 		if ( object !== null && object.parent !== null ) {
 
@@ -154,7 +154,7 @@ function MenubarEdit( editor ) {
 
 	// Set textures to sRGB. See #15903
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/edit/fixcolormaps' ) );
 	option.onClick( function () {
@@ -164,17 +164,17 @@ function MenubarEdit( editor ) {
 	} );
 	options.add( option );
 
-	const colorMaps = [ 'map', 'envMap', 'emissiveMap' ];
+	var colorMaps = [ 'map', 'envMap', 'emissiveMap' ];
 
 	function fixColorMap( obj ) {
 
-		const material = obj.material;
+		var material = obj.material;
 
 		if ( material !== undefined ) {
 
 			if ( Array.isArray( material ) === true ) {
 
-				for ( let i = 0; i < material.length; i ++ ) {
+				for ( var i = 0; i < material.length; i ++ ) {
 
 					fixMaterial( material[ i ] );
 
@@ -194,11 +194,11 @@ function MenubarEdit( editor ) {
 
 	function fixMaterial( material ) {
 
-		let needsUpdate = material.needsUpdate;
+		var needsUpdate = material.needsUpdate;
 
-		for ( let i = 0; i < colorMaps.length; i ++ ) {
+		for ( var i = 0; i < colorMaps.length; i ++ ) {
 
-			const map = material[ colorMaps[ i ] ];
+			var map = material[ colorMaps[ i ] ];
 
 			if ( map ) {
 

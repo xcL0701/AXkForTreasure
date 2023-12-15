@@ -13,7 +13,24 @@
 
 	class SimplifyModifier {
 
+		constructor() {
+
+			if ( THREE.BufferGeometryUtils === undefined ) {
+
+				throw 'THREE.SimplifyModifier relies on THREE.BufferGeometryUtils';
+
+			}
+
+		}
+
 		modify( geometry, count ) {
+
+			if ( geometry.isGeometry === true ) {
+
+				console.error( 'THREE.SimplifyModifier no longer supports Geometry. Use THREE.BufferGeometry instead.' );
+				return;
+
+			}
 
 			geometry = geometry.clone();
 			const attributes = geometry.attributes; // this modifier can only process indexed and non-indexed geomtries with a position attribute
@@ -36,7 +53,7 @@
 			for ( let i = 0; i < positionAttribute.count; i ++ ) {
 
 				const v = new THREE.Vector3().fromBufferAttribute( positionAttribute, i );
-				const vertex = new Vertex( v );
+				const vertex = new Vertex( v, i );
 				vertices.push( vertex );
 
 			} // add faces
@@ -103,9 +120,7 @@
 			for ( let i = 0; i < vertices.length; i ++ ) {
 
 				const vertex = vertices[ i ].position;
-				position.push( vertex.x, vertex.y, vertex.z ); // cache final index to GREATLY speed up faces reconstruction
-
-				vertices[ i ].id = i;
+				position.push( vertex.x, vertex.y, vertex.z );
 
 			} //
 
@@ -113,7 +128,10 @@
 			for ( let i = 0; i < faces.length; i ++ ) {
 
 				const face = faces[ i ];
-				index.push( face.v1.id, face.v2.id, face.v3.id );
+				const a = vertices.indexOf( face.v1 );
+				const b = vertices.indexOf( face.v2 );
+				const c = vertices.indexOf( face.v3 );
+				index.push( a, b, c );
 
 			} //
 
@@ -134,7 +152,7 @@
 
 	function removeFromArray( array, object ) {
 
-		const k = array.indexOf( object );
+		var k = array.indexOf( object );
 		if ( k > - 1 ) array.splice( k, 1 );
 
 	}
@@ -306,7 +324,7 @@
 
 		for ( let i = u.faces.length - 1; i >= 0; i -- ) {
 
-			if ( u.faces[ i ] && u.faces[ i ].hasVertex( v ) ) {
+			if ( u.faces[ i ].hasVertex( v ) ) {
 
 				removeFace( u.faces[ i ], faces );
 
@@ -422,10 +440,10 @@
 
 	class Vertex {
 
-		constructor( v ) {
+		constructor( v, id ) {
 
 			this.position = v;
-			this.id = - 1; // external use position in vertices list (for e.g. face generation)
+			this.id = id; // old index id
 
 			this.faces = []; // faces vertex is connected
 

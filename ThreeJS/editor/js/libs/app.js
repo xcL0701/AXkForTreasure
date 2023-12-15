@@ -133,7 +133,11 @@ var APP = {
 
 			}
 
-			renderer.setSize( width, height );
+			if ( renderer ) {
+
+				renderer.setSize( width, height );
+
+			}
 
 		};
 

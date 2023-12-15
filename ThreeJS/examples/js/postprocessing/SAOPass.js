@@ -6,15 +6,15 @@
 
 	class SAOPass extends THREE.Pass {
 
-		constructor( scene, camera, useDepthTexture = false, useNormals = false, resolution = new THREE.Vector2( 256, 256 ) ) {
+		constructor( scene, camera, depthTexture, useNormals, resolution ) {
 
 			super();
 			this.scene = scene;
 			this.camera = camera;
 			this.clear = true;
 			this.needsSwap = false;
-			this.supportsDepthTextureExtension = useDepthTexture;
-			this.supportsNormalTexture = useNormals;
+			this.supportsDepthTextureExtension = depthTexture !== undefined ? depthTexture : false;
+			this.supportsNormalTexture = useNormals !== undefined ? useNormals : false;
 			this.originalClearColor = new THREE.Color();
 			this._oldClearColor = new THREE.Color();
 			this.oldClearAlpha = 1;
@@ -30,20 +30,24 @@
 				saoBlurStdDev: 4,
 				saoBlurDepthCutoff: 0.01
 			};
-			this.resolution = new THREE.Vector2( resolution.x, resolution.y );
-			this.saoRenderTarget = new THREE.WebGLRenderTarget( this.resolution.x, this.resolution.y );
+			this.resolution = resolution !== undefined ? new THREE.Vector2( resolution.x, resolution.y ) : new THREE.Vector2( 256, 256 );
+			this.saoRenderTarget = new THREE.WebGLRenderTarget( this.resolution.x, this.resolution.y, {
+				minFilter: THREE.LinearFilter,
+				magFilter: THREE.LinearFilter,
+				format: THREE.RGBAFormat
+			} );
 			this.blurIntermediateRenderTarget = this.saoRenderTarget.clone();
 			this.beautyRenderTarget = this.saoRenderTarget.clone();
 			this.normalRenderTarget = new THREE.WebGLRenderTarget( this.resolution.x, this.resolution.y, {
 				minFilter: THREE.NearestFilter,
-				magFilter: THREE.NearestFilter
+				magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat
 			} );
 			this.depthRenderTarget = this.normalRenderTarget.clone();
-			let depthTexture;
 
 			if ( this.supportsDepthTextureExtension ) {
 
-				depthTexture = new THREE.DepthTexture();
+				const depthTexture = new THREE.DepthTexture();
 				depthTexture.type = THREE.UnsignedShortType;
 				this.beautyRenderTarget.depthTexture = depthTexture;
 				this.beautyRenderTarget.depthBuffer = true;

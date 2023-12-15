@@ -4,8 +4,7 @@
 		<meta charset="utf-8">
 		<title>three.js docs</title>
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link rel="shortcut icon" href="../files/favicon_white.ico" media="(prefers-color-scheme: dark)"/>
-		<link rel="shortcut icon" href="../files/favicon.ico" media="(prefers-color-scheme: light)" />
+		<link rel="shortcut icon" href="../files/favicon.ico" />
 		<link rel="stylesheet" type="text/css" href="../files/main.css">
 		<!-- console sandbox -->
 		<script src="../build/three.min.js" async defer></script>
@@ -18,7 +17,7 @@
 
 				<div id="sections">
 					<span class="selected">docs</span>
-					<a href="../examples/#webgl_animation_keyframes">examples</a>
+					<a href="../examples/#webgl_animation_cloth">examples</a>
 				</div>
 
 				<div id="expandButton"></div>
@@ -36,9 +35,6 @@
 						<option value="ko">한국어</option>
 						<option value="zh">中文</option>
 						<option value="ja">日本語</option>
-						<option value="it">it</option>
-						<option value="pt-br">pt-br</option>
-						<option value="fr">fr</option>
 					</select>
 				</div>
 				<div id="content"></div>
@@ -58,9 +54,6 @@
 		const filterInput = document.getElementById( 'filterInput' );
 		let iframe = document.querySelector( 'iframe' );
 
-		const sectionLink = document.querySelector( '#sections > a' );
-		const sectionDefaultHref = sectionLink.href;
-
 		const pageProperties = {};
 		const titles = {};
 		const categoryElements = [];
@@ -75,7 +68,7 @@
 
 			// *BufferGeometry to *Geometry
 
-			if ( /Instanced/.exec( window.location.hash ) === null && /([\w]+)BufferGeometry$/.exec( window.location.hash ) ) {
+			if ( /([\w]+)BufferGeometry$/.exec( window.location.hash ) ) {
 
 				window.location.hash = window.location.hash.replace( 'BufferGeometry', 'Geometry' );
 
@@ -89,7 +82,7 @@
 
 			if ( /^(api|manual|examples)/.test( hash ) ) {
 
-				const hashLanguage = /^(api|manual|examples)\/(en|ar|ko|zh|ja|it|pt-br|fr)\//.exec( hash );
+				const hashLanguage = /^(api|manual|examples)\/(en|ar|ko|zh|ja)\//.exec( hash );
 
 				if ( hashLanguage === null ) {
 
@@ -191,10 +184,6 @@
 
 				updateFilter();
 
-			} else {
-
-				updateLink( '' );
-
 			}
 
 		}
@@ -249,7 +238,6 @@
 			}
 
 			const localList = list[ language ];
-			const selectedPage = window.location.hash.substring( 1 );
 
 			for ( const section in localList ) {
 
@@ -291,14 +279,6 @@
 						const linkElement = createLink( pageName, pageURL );
 						listElement.appendChild( linkElement );
 
-						// select current page
-
-						if ( pageURL === selectedPage ) {
-
-							linkElement.classList.add( 'selected' );
-
-						}
-
 						// Gather the main properties for the current subpage
 
 						pageProperties[ pageName ] = {
@@ -324,15 +304,15 @@
 
 		}
 
-		// Auto change language url. If a reader open a document in English, when they click "zh", the document they read will auto change into Chinese version
+		// Auto change language url. If a reader open a document in English, when he click "zh", the document he read will auto change into Chinese version
 
 		function autoChangeUrlLanguage( language ) {
 
 			const hash = location.hash;
 			if ( hash === '' ) return;
-			const docType = hash.slice( 0, hash.indexOf( '/' ) + 1 );
-			let docLink = hash.slice( hash.indexOf( '/' ) + 1 );
-			docLink = docLink.slice( docLink.indexOf( '/' ) );
+			const docType = hash.substr( 0, hash.indexOf( '/' ) + 1 );
+			let docLink = hash.substr( hash.indexOf( '/' ) + 1 );
+			docLink = docLink.substr( docLink.indexOf( '/' ) );
 			location.href = docType + language + docLink;
 
 		}
@@ -345,17 +325,11 @@
 
 			if ( search.indexOf( '?q=' ) !== - 1 ) {
 
-				return decodeURI( search.slice( 3 ) );
+				return decodeURI( search.substr( 3 ) );
 
 			}
 
 			return '';
-
-		}
-
-		function escapeRegExp( string ) {
-
-			return string.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' ); // https://stackoverflow.com/a/6969486/5250847
 
 		}
 
@@ -376,7 +350,7 @@
 
 			//
 
-			const regExp = new RegExp( escapeRegExp( v ), 'gi' );
+			const regExp = new RegExp( filterInput.value, 'gi' );
 
 			for ( let pageName in pageProperties ) {
 
@@ -384,9 +358,21 @@
 				const categoryClassList = linkElement.parentElement.classList;
 				const filterResults = pageName.match( regExp );
 
-				if ( filterResults !== null && filterResults.length > 0 ) {
+				if ( filterResults && filterResults.length > 0 ) {
 
-					pageName = pageName.replaceAll( regExp, '<b>$&</b>' );
+					// Accentuate matching characters
+
+					for ( let i = 0; i < filterResults.length; i ++ ) {
+
+						const result = filterResults[ i ];
+
+						if ( result !== '' ) {
+
+							pageName = pageName.replace( result, '<b>' + result + '</b>' );
+
+						}
+
+					}
 
 					categoryClassList.remove( 'hidden' );
 					linkElement.innerHTML = pageName;
@@ -402,25 +388,6 @@
 			}
 
 			displayFilteredPanel();
-
-			updateLink( v );
-
-		}
-
-		function updateLink( search ) {
-
-			// update examples link
-
-			if ( search ) {
-
-				const link = sectionLink.href.split( /[?#]/ )[ 0 ];
-				sectionLink.href = `${link}?q=${search}`;
-
-			} else {
-
-				sectionLink.href = sectionDefaultHref;
-
-			}
 
 		}
 
@@ -467,10 +434,10 @@
 
 		// Routing
 
-		function setUrlFragment( pageName ) { // eslint-disable-line no-unused-vars
+		function setUrlFragment( pageName ) { // eslint-disable-line no-undef
 
 			// Handle navigation from the subpages (iframes):
-			// First separate the member (if existing) from the page name,
+			// First separate the memeber (if existing) from the page name,
 			// then identify the subpage's URL and set it as URL fragment (re-adding the member)
 
 			const splitPageName = decomposePageName( pageName, '.', '.' );
@@ -507,17 +474,15 @@
 			const oldIframe = iframe;
 			iframe = oldIframe.cloneNode();
 
-			if ( hash && titles[ splitHash[ 0 ] ] ) {
+			if ( hash ) {
 
 				iframe.src = splitHash[ 0 ] + '.html' + splitHash[ 1 ];
 				subtitle = titles[ splitHash[ 0 ] ] + splitHash[ 1 ] + ' – ';
-				iframe.style.display = 'unset';
 
 			} else {
 
 				iframe.src = '';
 				subtitle = '';
-				iframe.style.display = 'none';
 
 			}
 

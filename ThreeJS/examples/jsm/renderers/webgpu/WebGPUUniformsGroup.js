@@ -1,17 +1,26 @@
-import WebGPUUniformBuffer from './WebGPUUniformBuffer.js';
-import { GPUChunkSize } from './constants.js';
+import WebGPUBinding from './WebGPUBinding.js';
+import { GPUBindingType } from './constants.js';
 
-class WebGPUUniformsGroup extends WebGPUUniformBuffer {
+class WebGPUUniformsGroup extends WebGPUBinding {
 
 	constructor( name ) {
 
 		super( name );
 
-		this.isUniformsGroup = true;
-
-		// the order of uniforms in this array must match the order of uniforms in the shader
+		 // the order of uniforms in this array must match the order of uniforms in the shader
 
 		this.uniforms = [];
+
+		this.onBeforeUpdate = function () {};
+
+		this.bytesPerElement = Float32Array.BYTES_PER_ELEMENT;
+		this.type = GPUBindingType.UniformBuffer;
+		this.visibility = GPUShaderStage.VERTEX;
+
+		this.usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST;
+
+		this.array = null; // set by the renderer
+		this.bufferGPU = null; // set by the renderer
 
 	}
 
@@ -37,27 +46,18 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 	}
 
-	getBuffer() {
+	setOnBeforeUpdate( callback ) {
 
-		let buffer = this.buffer;
+		this.onBeforeUpdate = callback;
 
-		if ( buffer === null ) {
-
-			const byteLength = this.getByteLength();
-
-			buffer = new Float32Array( new ArrayBuffer( byteLength ) );
-
-			this.buffer = buffer;
-
-		}
-
-		return buffer;
+		return this;
 
 	}
 
 	getByteLength() {
 
 		let offset = 0; // global buffer offset in bytes
+		const chunkSize = 16; // size of a chunk in bytes (STD140 layout)
 
 		for ( let i = 0, l = this.uniforms.length; i < l; i ++ ) {
 
@@ -65,8 +65,8 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 			// offset within a single chunk in bytes
 
-			const chunkOffset = offset % GPUChunkSize;
-			const remainingSizeInChunk = GPUChunkSize - chunkOffset;
+			const chunkOffset = offset % chunkSize;
+			const remainingSizeInChunk = chunkSize - chunkOffset;
 
 			// conformance tests
 
@@ -74,7 +74,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 				// check for chunk overflow
 
-				offset += ( GPUChunkSize - chunkOffset );
+				offset += ( chunkSize - chunkOffset );
 
 			} else if ( chunkOffset % uniform.boundary !== 0 ) {
 
@@ -130,7 +130,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 		let updated = false;
 
-		const a = this.buffer;
+		const a = this.array;
 		const v = uniform.getValue();
 		const offset = uniform.offset;
 
@@ -149,7 +149,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 		let updated = false;
 
-		const a = this.buffer;
+		const a = this.array;
 		const v = uniform.getValue();
 		const offset = uniform.offset;
 
@@ -170,7 +170,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 		let updated = false;
 
-		const a = this.buffer;
+		const a = this.array;
 		const v = uniform.getValue();
 		const offset = uniform.offset;
 
@@ -192,7 +192,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 		let updated = false;
 
-		const a = this.buffer;
+		const a = this.array;
 		const v = uniform.getValue();
 		const offset = uniform.offset;
 
@@ -215,7 +215,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 		let updated = false;
 
-		const a = this.buffer;
+		const a = this.array;
 		const c = uniform.getValue();
 		const offset = uniform.offset;
 
@@ -237,7 +237,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 		let updated = false;
 
-		const a = this.buffer;
+		const a = this.array;
 		const e = uniform.getValue().elements;
 		const offset = uniform.offset;
 
@@ -267,7 +267,7 @@ class WebGPUUniformsGroup extends WebGPUUniformBuffer {
 
 		let updated = false;
 
-		const a = this.buffer;
+		const a = this.array;
 		const e = uniform.getValue().elements;
 		const offset = uniform.offset;
 
@@ -295,5 +295,7 @@ function arraysEqual( a, b, offset ) {
 	return true;
 
 }
+
+WebGPUUniformsGroup.prototype.isUniformsGroup = true;
 
 export default WebGPUUniformsGroup;

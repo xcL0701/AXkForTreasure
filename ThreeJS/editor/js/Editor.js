@@ -1,11 +1,10 @@
-import * as THREE from 'three';
+import * as THREE from '../../build/three.module.js';
 
 import { Config } from './Config.js';
 import { Loader } from './Loader.js';
 import { History as _History } from './History.js';
 import { Strings } from './Strings.js';
 import { Storage as _Storage } from './Storage.js';
-import { Selector } from './Viewport.Selector.js';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera( 50, 1, 0.01, 1000 );
 _DEFAULT_CAMERA.name = 'Camera';
@@ -14,7 +13,7 @@ _DEFAULT_CAMERA.lookAt( new THREE.Vector3() );
 
 function Editor() {
 
-	const Signal = signals.Signal; // eslint-disable-line no-undef
+	var Signal = signals.Signal;
 
 	this.signals = {
 
@@ -87,7 +86,7 @@ function Editor() {
 
 		viewportCameraChanged: new Signal(),
 
-		intersectionsDetected: new Signal(),
+		animationStopped: new Signal()
 
 	};
 
@@ -95,7 +94,6 @@ function Editor() {
 	this.history = new _History( this );
 	this.storage = new _Storage();
 	this.strings = new Strings( this.config );
-	this.selector = new Selector( this );
 
 	this.loader = new Loader( this );
 
@@ -133,9 +131,9 @@ Editor.prototype = {
 		this.scene.uuid = scene.uuid;
 		this.scene.name = scene.name;
 
-		this.scene.background = scene.background;
-		this.scene.environment = scene.environment;
-		this.scene.fog = scene.fog;
+		this.scene.background = ( scene.background !== null ) ? scene.background.clone() : null;
+
+		if ( scene.fog !== null ) this.scene.fog = scene.fog.clone();
 
 		this.scene.userData = JSON.parse( JSON.stringify( scene.userData ) );
 
@@ -426,10 +424,6 @@ Editor.prototype = {
 
 					helper = new THREE.SkeletonHelper( object.skeleton.bones[ 0 ] );
 
-				} else if ( object.isBone === true && object.parent?.isBone !== true ) {
-
-					helper = new THREE.SkeletonHelper( object );
-
 				} else {
 
 					// no helper for this object type
@@ -437,7 +431,7 @@ Editor.prototype = {
 
 				}
 
-				const picker = new THREE.Mesh( geometry, material );
+				var picker = new THREE.Mesh( geometry, material );
 				picker.name = 'picker';
 				picker.userData.object = object;
 				helper.add( picker );
@@ -539,7 +533,20 @@ Editor.prototype = {
 
 	select: function ( object ) {
 
-		this.selector.select( object );
+		if ( this.selected === object ) return;
+
+		var uuid = null;
+
+		if ( object !== null ) {
+
+			uuid = object.uuid;
+
+		}
+
+		this.selected = object;
+
+		this.config.setKey( 'selected', uuid );
+		this.signals.objectSelected.dispatch( object );
 
 	},
 
@@ -574,7 +581,7 @@ Editor.prototype = {
 
 	deselect: function () {
 
-		this.selector.deselect();
+		this.select( null );
 
 	},
 
@@ -634,10 +641,12 @@ Editor.prototype = {
 
 	//
 
-	fromJSON: async function ( json ) {
+	fromJSON: function ( json ) {
+
+		var scope = this;
 
 		var loader = new THREE.ObjectLoader();
-		var camera = await loader.parseAsync( json.camera );
+		var camera = loader.parse( json.camera );
 
 		this.camera.copy( camera );
 		this.signals.cameraResetted.dispatch();
@@ -645,7 +654,11 @@ Editor.prototype = {
 		this.history.fromJSON( json.history );
 		this.scripts = json.scripts;
 
-		this.setScene( await loader.parseAsync( json.scene ) );
+		loader.parse( json.scene, function ( scene ) {
+
+			scope.setScene( scene );
+
+		} );
 
 	},
 

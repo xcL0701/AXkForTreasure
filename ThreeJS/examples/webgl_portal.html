@@ -20,25 +20,12 @@
 		<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - portal
 		</div>
 
-		<!-- Import maps polyfill -->
-		<!-- Remove this when import maps will be widely supported -->
-		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
-
-		<script type="importmap">
-			{
-				"imports": {
-					"three": "../build/three.module.js",
-					"three/addons/": "./jsm/"
-				}
-			}
-		</script>
-
 		<script type="module">
 
-			import * as THREE from 'three';
+			import * as THREE from '../build/three.module.js';
 
-			import * as CameraUtils from 'three/addons/utils/CameraUtils.js';
-			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { CameraUtils } from './jsm/utils/CameraUtils.js';
+			import { OrbitControls } from './jsm/controls/OrbitControls.js';
 
 			let camera, scene, renderer;
 
@@ -80,10 +67,14 @@
 
 				const planeGeo = new THREE.PlaneGeometry( 100.1, 100.1 );
 
+				let geometry, material;
+				geometry = new THREE.CylinderGeometry( 0.1, 15 * Math.cos( Math.PI / 180 * 30 ), 0.1, 24, 1 );
+				material = new THREE.MeshPhongMaterial( { color: 0xffffff, emissive: 0x444444 } );
+
 				// bouncing icosphere
 				const portalPlane = new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0.0 );
-				const geometry = new THREE.IcosahedronGeometry( 5, 0 );
-				const material = new THREE.MeshPhongMaterial( {
+				geometry = new THREE.IcosahedronGeometry( 5, 0 );
+				material = new THREE.MeshPhongMaterial( {
 					color: 0xffffff, emissive: 0x333333, flatShading: true,
 					clippingPlanes: [ portalPlane ], clipShadows: true } );
 				smallSphereOne = new THREE.Mesh( geometry, material );
@@ -101,14 +92,22 @@
 				topLeftCorner = new THREE.Vector3();
 				reflectedPosition = new THREE.Vector3();
 
-				leftPortalTexture = new THREE.WebGLRenderTarget( 256, 256 );
+				leftPortalTexture = new THREE.WebGLRenderTarget( 256, 256, {
+					minFilter: THREE.LinearFilter,
+					magFilter: THREE.LinearFilter,
+					format: THREE.RGBFormat
+				} );
 				leftPortal = new THREE.Mesh( planeGeo, new THREE.MeshBasicMaterial( { map: leftPortalTexture.texture } ) );
 				leftPortal.position.x = - 30;
 				leftPortal.position.y = 20;
 				leftPortal.scale.set( 0.35, 0.35, 0.35 );
 				scene.add( leftPortal );
 
-				rightPortalTexture = new THREE.WebGLRenderTarget( 256, 256 );
+				rightPortalTexture = new THREE.WebGLRenderTarget( 256, 256, {
+					minFilter: THREE.LinearFilter,
+					magFilter: THREE.LinearFilter,
+					format: THREE.RGBFormat
+				} );
 				rightPortal = new THREE.Mesh( planeGeo, new THREE.MeshBasicMaterial( { map: rightPortalTexture.texture } ) );
 				rightPortal.position.x = 30;
 				rightPortal.position.y = 20;
@@ -166,7 +165,7 @@
 				blueLight.position.set( 0, 50, 550 );
 				scene.add( blueLight );
 
-				window.addEventListener( 'resize', onWindowResize );
+				window.addEventListener( 'resize', onWindowResize, false );
 
 			}
 
@@ -200,9 +199,7 @@
 				renderer.setRenderTarget( thisPortalTexture );
 				renderer.state.buffers.depth.setMask( true ); // make sure the depth buffer is writable so it can be properly cleared, see #18897
 				if ( renderer.autoClear === false ) renderer.clear();
-				thisPortalMesh.visible = false; // hide this portal from its own rendering
 				renderer.render( scene, portalCamera );
-				thisPortalMesh.visible = true; // re-enable this portal's visibility for general rendering
 
 			}
 

@@ -6,19 +6,39 @@
 
 			super( manager );
 			this.hdrLoader = new THREE.RGBELoader();
-			this.type = THREE.HalfFloatType;
+			this.type = THREE.UnsignedByteType;
 
 		}
 
 		load( urls, onLoad, onProgress, onError ) {
+
+			if ( ! Array.isArray( urls ) ) {
+
+				console.warn( 'THREE.HDRCubeTextureLoader signature has changed. Use .setDataType() instead.' );
+				this.setDataType( urls );
+				urls = onLoad;
+				onLoad = onProgress;
+				onProgress = onError;
+				onError = arguments[ 4 ];
+
+			}
 
 			const texture = new THREE.CubeTexture();
 			texture.type = this.type;
 
 			switch ( texture.type ) {
 
+				case THREE.UnsignedByteType:
+					texture.encoding = THREE.RGBEEncoding;
+					texture.format = THREE.RGBAFormat;
+					texture.minFilter = THREE.NearestFilter;
+					texture.magFilter = THREE.NearestFilter;
+					texture.generateMipmaps = false;
+					break;
+
 				case THREE.FloatType:
 					texture.encoding = THREE.LinearEncoding;
+					texture.format = THREE.RGBFormat;
 					texture.minFilter = THREE.LinearFilter;
 					texture.magFilter = THREE.LinearFilter;
 					texture.generateMipmaps = false;
@@ -26,6 +46,7 @@
 
 				case THREE.HalfFloatType:
 					texture.encoding = THREE.LinearEncoding;
+					texture.format = THREE.RGBFormat;
 					texture.minFilter = THREE.LinearFilter;
 					texture.magFilter = THREE.LinearFilter;
 					texture.generateMipmaps = false;

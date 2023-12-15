@@ -9,19 +9,19 @@ import { SidebarSettings } from './Sidebar.Settings.js';
 
 function Sidebar( editor ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const container = new UITabbedPanel();
+	var container = new UITabbedPanel();
 	container.setId( 'sidebar' );
 
-	const scene = new UISpan().add(
+	var scene = new UISpan().add(
 		new SidebarScene( editor ),
 		new SidebarProperties( editor ),
 		new SidebarAnimation( editor ),
 		new SidebarScript( editor )
 	);
-	const project = new SidebarProject( editor );
-	const settings = new SidebarSettings( editor );
+	var project = new SidebarProject( editor );
+	var settings = new SidebarSettings( editor );
 
 	container.addTab( 'scene', strings.getKey( 'sidebar/scene' ), scene );
 	container.addTab( 'project', strings.getKey( 'sidebar/project' ), project );

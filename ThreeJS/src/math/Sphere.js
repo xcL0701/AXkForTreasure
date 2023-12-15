@@ -112,6 +112,13 @@ class Sphere {
 
 		const deltaLengthSq = this.center.distanceToSquared( point );
 
+		if ( target === undefined ) {
+
+			console.warn( 'THREE.Sphere: .clampPoint() target is now required' );
+			target = new Vector3();
+
+		}
+
 		target.copy( point );
 
 		if ( deltaLengthSq > ( this.radius * this.radius ) ) {
@@ -126,6 +133,13 @@ class Sphere {
 	}
 
 	getBoundingBox( target ) {
+
+		if ( target === undefined ) {
+
+			console.warn( 'THREE.Sphere: .getBoundingBox() target is now required' );
+			target = new Box3();
+
+		}
 
 		if ( this.isEmpty() ) {
 
@@ -161,15 +175,6 @@ class Sphere {
 
 	expandByPoint( point ) {
 
-		if ( this.isEmpty() ) {
-
-			this.center.copy( point );
-			this.radius = 0;
-
-			return this;
-
-		}
-
 		// from https://github.com/juj/MathGeoLib/blob/2940b99b99cfe575dd45103ef20f4019dee15b54/src/Geometry/Sphere.cpp#L649-L671
 
 		_toPoint.subVectors( point, this.center );
@@ -196,35 +201,13 @@ class Sphere {
 
 	union( sphere ) {
 
-		// handle empty sphere cases
-		if ( sphere.isEmpty() ) {
-
-			return this;
-
-		} else if ( this.isEmpty() ) {
-
-			this.copy( sphere );
-
-			return this;
-
-		}
-
 		// from https://github.com/juj/MathGeoLib/blob/2940b99b99cfe575dd45103ef20f4019dee15b54/src/Geometry/Sphere.cpp#L759-L769
 
 		// To enclose another sphere into this sphere, we only need to enclose two points:
 		// 1) Enclose the farthest point on the other sphere into this sphere.
 		// 2) Enclose the opposite point of the farthest point into this sphere.
 
-		 if ( this.center.equals( sphere.center ) === true ) {
-
-			 _toFarthestPoint.set( 0, 0, 1 ).multiplyScalar( sphere.radius );
-
-
-		} else {
-
-			_toFarthestPoint.subVectors( sphere.center, this.center ).normalize().multiplyScalar( sphere.radius );
-
-		}
+		_toFarthestPoint.subVectors( sphere.center, this.center ).normalize().multiplyScalar( sphere.radius );
 
 		this.expandByPoint( _v1.copy( sphere.center ).add( _toFarthestPoint ) );
 		this.expandByPoint( _v1.copy( sphere.center ).sub( _toFarthestPoint ) );

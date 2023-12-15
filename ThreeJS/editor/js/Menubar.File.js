@@ -1,29 +1,39 @@
-import * as THREE from 'three';
+import * as THREE from '../../build/three.module.js';
 
-import { zipSync, strToU8 } from 'three/addons/libs/fflate.module.js';
+import { zipSync, strToU8 } from '../../examples/jsm/libs/fflate.module.js';
 
 import { UIPanel, UIRow, UIHorizontalRule } from './libs/ui.js';
 
 function MenubarFile( editor ) {
 
-	const config = editor.config;
-	const strings = editor.strings;
+	function parseNumber( key, value ) {
 
-	const container = new UIPanel();
+		var precision = config.getKey( 'exportPrecision' );
+
+		return typeof value === 'number' ? parseFloat( value.toFixed( precision ) ) : value;
+
+	}
+
+	//
+
+	var config = editor.config;
+	var strings = editor.strings;
+
+	var container = new UIPanel();
 	container.setClass( 'menu' );
 
-	const title = new UIPanel();
+	var title = new UIPanel();
 	title.setClass( 'title' );
 	title.setTextContent( strings.getKey( 'menubar/file' ) );
 	container.add( title );
 
-	const options = new UIPanel();
+	var options = new UIPanel();
 	options.setClass( 'options' );
 	container.add( options );
 
 	// New
 
-	let option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/new' ) );
 	option.onClick( function () {
@@ -43,11 +53,11 @@ function MenubarFile( editor ) {
 
 	// Import
 
-	const form = document.createElement( 'form' );
+	var form = document.createElement( 'form' );
 	form.style.display = 'none';
 	document.body.appendChild( form );
 
-	const fileInput = document.createElement( 'input' );
+	var fileInput = document.createElement( 'input' );
 	fileInput.multiple = true;
 	fileInput.type = 'file';
 	fileInput.addEventListener( 'change', function () {
@@ -58,7 +68,7 @@ function MenubarFile( editor ) {
 	} );
 	form.appendChild( fileInput );
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/import' ) );
 	option.onClick( function () {
@@ -74,12 +84,12 @@ function MenubarFile( editor ) {
 
 	// Export Geometry
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/geometry' ) );
 	option.onClick( function () {
 
-		const object = editor.selected;
+		var object = editor.selected;
 
 		if ( object === null ) {
 
@@ -88,7 +98,7 @@ function MenubarFile( editor ) {
 
 		}
 
-		const geometry = object.geometry;
+		var geometry = object.geometry;
 
 		if ( geometry === undefined ) {
 
@@ -97,11 +107,11 @@ function MenubarFile( editor ) {
 
 		}
 
-		let output = geometry.toJSON();
+		var output = geometry.toJSON();
 
 		try {
 
-			output = JSON.stringify( output, null, '\t' );
+			output = JSON.stringify( output, parseNumber, '\t' );
 			output = output.replace( /[\n\t]+([\d\.e\-\[\]]+)/g, '$1' );
 
 		} catch ( e ) {
@@ -117,12 +127,12 @@ function MenubarFile( editor ) {
 
 	// Export Object
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/object' ) );
 	option.onClick( function () {
 
-		const object = editor.selected;
+		var object = editor.selected;
 
 		if ( object === null ) {
 
@@ -131,11 +141,11 @@ function MenubarFile( editor ) {
 
 		}
 
-		let output = object.toJSON();
+		var output = object.toJSON();
 
 		try {
 
-			output = JSON.stringify( output, null, '\t' );
+			output = JSON.stringify( output, parseNumber, '\t' );
 			output = output.replace( /[\n\t]+([\d\.e\-\[\]]+)/g, '$1' );
 
 		} catch ( e ) {
@@ -151,16 +161,16 @@ function MenubarFile( editor ) {
 
 	// Export Scene
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/scene' ) );
 	option.onClick( function () {
 
-		let output = editor.scene.toJSON();
+		var output = editor.scene.toJSON();
 
 		try {
 
-			output = JSON.stringify( output, null, '\t' );
+			output = JSON.stringify( output, parseNumber, '\t' );
 			output = output.replace( /[\n\t]+([\d\.e\-\[\]]+)/g, '$1' );
 
 		} catch ( e ) {
@@ -180,14 +190,14 @@ function MenubarFile( editor ) {
 
 	// Export DAE
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/dae' ) );
 	option.onClick( async function () {
 
-		const { ColladaExporter } = await import( 'three/addons/exporters/ColladaExporter.js' );
+		var { ColladaExporter } = await import( '../../examples/jsm/exporters/ColladaExporter.js' );
 
-		const exporter = new ColladaExporter();
+		var exporter = new ColladaExporter();
 
 		exporter.parse( editor.scene, function ( result ) {
 
@@ -200,12 +210,12 @@ function MenubarFile( editor ) {
 
 	// Export DRC
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/drc' ) );
 	option.onClick( async function () {
 
-		const object = editor.selected;
+		var object = editor.selected;
 
 		if ( object === null || object.isMesh === undefined ) {
 
@@ -214,22 +224,12 @@ function MenubarFile( editor ) {
 
 		}
 
-		const { DRACOExporter } = await import( 'three/addons/exporters/DRACOExporter.js' );
+		var { DRACOExporter } = await import( '../../examples/jsm/exporters/DRACOExporter.js' );
 
-		const exporter = new DRACOExporter();
-
-		const options = {
-			decodeSpeed: 5,
-			encodeSpeed: 5,
-			encoderMethod: DRACOExporter.MESH_EDGEBREAKER_ENCODING,
-			quantization: [ 16, 8, 8, 8, 8 ],
-			exportUvs: true,
-			exportNormals: true,
-			exportColor: object.geometry.hasAttribute( 'color' )
-		};
+		var exporter = new DRACOExporter();
 
 		// TODO: Change to DRACOExporter's parse( geometry, onParse )?
-		const result = exporter.parse( object, options );
+		var result = exporter.parse( object );
 		saveArrayBuffer( result, 'model.drc' );
 
 	} );
@@ -237,46 +237,46 @@ function MenubarFile( editor ) {
 
 	// Export GLB
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/glb' ) );
 	option.onClick( async function () {
 
-		const scene = editor.scene;
-		const animations = getAnimations( scene );
+		var scene = editor.scene;
+		var animations = getAnimations( scene );
 
-		const { GLTFExporter } = await import( 'three/addons/exporters/GLTFExporter.js' );
+		var { GLTFExporter } = await import( '../../examples/jsm/exporters/GLTFExporter.js' );
 
-		const exporter = new GLTFExporter();
+		var exporter = new GLTFExporter();
 
 		exporter.parse( scene, function ( result ) {
 
 			saveArrayBuffer( result, 'scene.glb' );
 
-		}, undefined, { binary: true, animations: animations } );
+		}, { binary: true, animations: animations } );
 
 	} );
 	options.add( option );
 
 	// Export GLTF
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/gltf' ) );
 	option.onClick( async function () {
 
-		const scene = editor.scene;
-		const animations = getAnimations( scene );
+		var scene = editor.scene;
+		var animations = getAnimations( scene );
 
-		const { GLTFExporter } = await import( 'three/addons/exporters/GLTFExporter.js' );
+		var { GLTFExporter } = await import( '../../examples/jsm/exporters/GLTFExporter.js' );
 
-		const exporter = new GLTFExporter();
+		var exporter = new GLTFExporter();
 
 		exporter.parse( scene, function ( result ) {
 
 			saveString( JSON.stringify( result, null, 2 ), 'scene.gltf' );
 
-		}, undefined, { animations: animations } );
+		}, { animations: animations } );
 
 
 	} );
@@ -284,12 +284,12 @@ function MenubarFile( editor ) {
 
 	// Export OBJ
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/obj' ) );
 	option.onClick( async function () {
 
-		const object = editor.selected;
+		var object = editor.selected;
 
 		if ( object === null ) {
 
@@ -298,9 +298,9 @@ function MenubarFile( editor ) {
 
 		}
 
-		const { OBJExporter } = await import( 'three/addons/exporters/OBJExporter.js' );
+		var { OBJExporter } = await import( '../../examples/jsm/exporters/OBJExporter.js' );
 
-		const exporter = new OBJExporter();
+		var exporter = new OBJExporter();
 
 		saveString( exporter.parse( object ), 'model.obj' );
 
@@ -309,14 +309,14 @@ function MenubarFile( editor ) {
 
 	// Export PLY (ASCII)
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/ply' ) );
 	option.onClick( async function () {
 
-		const { PLYExporter } = await import( 'three/addons/exporters/PLYExporter.js' );
+		var { PLYExporter } = await import( '../../examples/jsm/exporters/PLYExporter.js' );
 
-		const exporter = new PLYExporter();
+		var exporter = new PLYExporter();
 
 		exporter.parse( editor.scene, function ( result ) {
 
@@ -329,14 +329,14 @@ function MenubarFile( editor ) {
 
 	// Export PLY (Binary)
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/ply_binary' ) );
 	option.onClick( async function () {
 
-		const { PLYExporter } = await import( 'three/addons/exporters/PLYExporter.js' );
+		var { PLYExporter } = await import( '../../examples/jsm/exporters/PLYExporter.js' );
 
-		const exporter = new PLYExporter();
+		var exporter = new PLYExporter();
 
 		exporter.parse( editor.scene, function ( result ) {
 
@@ -349,14 +349,14 @@ function MenubarFile( editor ) {
 
 	// Export STL (ASCII)
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/stl' ) );
 	option.onClick( async function () {
 
-		const { STLExporter } = await import( 'three/addons/exporters/STLExporter.js' );
+		var { STLExporter } = await import( '../../examples/jsm/exporters/STLExporter.js' );
 
-		const exporter = new STLExporter();
+		var exporter = new STLExporter();
 
 		saveString( exporter.parse( editor.scene ), 'model.stl' );
 
@@ -365,14 +365,14 @@ function MenubarFile( editor ) {
 
 	// Export STL (Binary)
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/stl_binary' ) );
 	option.onClick( async function () {
 
-		const { STLExporter } = await import( 'three/addons/exporters/STLExporter.js' );
+		var { STLExporter } = await import( '../../examples/jsm/exporters/STLExporter.js' );
 
-		const exporter = new STLExporter();
+		var exporter = new STLExporter();
 
 		saveArrayBuffer( exporter.parse( editor.scene, { binary: true } ), 'model-binary.stl' );
 
@@ -381,14 +381,14 @@ function MenubarFile( editor ) {
 
 	// Export USDZ
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/export/usdz' ) );
 	option.onClick( async function () {
 
-		const { USDZExporter } = await import( 'three/addons/exporters/USDZExporter.js' );
+		var { USDZExporter } = await import( '../../examples/jsm/exporters/USDZExporter.js' );
 
-		const exporter = new USDZExporter();
+		var exporter = new USDZExporter();
 
 		saveArrayBuffer( await exporter.parse( editor.scene, { binary: true } ), 'model.usdz' );
 
@@ -401,63 +401,65 @@ function MenubarFile( editor ) {
 
 	// Publish
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/file/publish' ) );
 	option.onClick( function () {
 
-		const toZip = {};
+		var toZip = {};
 
 		//
 
-		let output = editor.toJSON();
+		var output = editor.toJSON();
 		output.metadata.type = 'App';
 		delete output.history;
 
-		output = JSON.stringify( output, null, '\t' );
+		output = JSON.stringify( output, parseNumber, '\t' );
 		output = output.replace( /[\n\t]+([\d\.e\-\[\]]+)/g, '$1' );
 
 		toZip[ 'app.json' ] = strToU8( output );
 
 		//
 
-		const title = config.getKey( 'project/title' );
+		var title = config.getKey( 'project/title' );
 
-		const manager = new THREE.LoadingManager( function () {
+		var manager = new THREE.LoadingManager( function () {
 
-			const zipped = zipSync( toZip, { level: 9 } );
+			var zipped = zipSync( toZip, { level: 9 } );
 
-			const blob = new Blob( [ zipped.buffer ], { type: 'application/zip' } );
+			var blob = new Blob( [ zipped.buffer ], { type: 'application/zip' } );
 
 			save( blob, ( title !== '' ? title : 'untitled' ) + '.zip' );
 
 		} );
 
-		const loader = new THREE.FileLoader( manager );
+		var loader = new THREE.FileLoader( manager );
 		loader.load( 'js/libs/app/index.html', function ( content ) {
 
 			content = content.replace( '<!-- title -->', title );
 
-			const includes = [];
+			var includes = [];
 
 			content = content.replace( '<!-- includes -->', includes.join( '\n\t\t' ) );
 
-			let editButton = '';
+			var editButton = '';
 
 			if ( config.getKey( 'project/editable' ) ) {
 
 				editButton = [
-					'			let button = document.createElement( \'a\' );',
+					'',
+					'			var button = document.createElement( \'a\' );',
 					'			button.href = \'https://threejs.org/editor/#file=\' + location.href.split( \'/\' ).slice( 0, - 1 ).join( \'/\' ) + \'/app.json\';',
 					'			button.style.cssText = \'position: absolute; bottom: 20px; right: 20px; padding: 10px 16px; color: #fff; border: 1px solid #fff; border-radius: 20px; text-decoration: none;\';',
 					'			button.target = \'_blank\';',
 					'			button.textContent = \'EDIT\';',
 					'			document.body.appendChild( button );',
+					''
 				].join( '\n' );
 
 			}
 
-			content = content.replace( '\t\t\t/* edit button */', editButton );
+			content = content.replace( '\n\t\t\t/* edit button */\n', editButton );
 
 			toZip[ 'index.html' ] = strToU8( content );
 
@@ -483,7 +485,7 @@ function MenubarFile( editor ) {
 
 	//
 
-	const link = document.createElement( 'a' );
+	var link = document.createElement( 'a' );
 	function save( blob, filename ) {
 
 		if ( link.href ) {
@@ -512,7 +514,7 @@ function MenubarFile( editor ) {
 
 	function getAnimations( scene ) {
 
-		const animations = [];
+		var animations = [];
 
 		scene.traverse( function ( object ) {
 

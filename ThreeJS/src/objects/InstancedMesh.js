@@ -1,4 +1,4 @@
-import { InstancedBufferAttribute } from '../core/InstancedBufferAttribute.js';
+import { BufferAttribute } from '../core/BufferAttribute.js';
 import { Mesh } from './Mesh.js';
 import { Matrix4 } from '../math/Matrix4.js';
 
@@ -15,9 +15,7 @@ class InstancedMesh extends Mesh {
 
 		super( geometry, material );
 
-		this.isInstancedMesh = true;
-
-		this.instanceMatrix = new InstancedBufferAttribute( new Float32Array( count * 16 ), 16 );
+		this.instanceMatrix = new BufferAttribute( new Float32Array( count * 16 ), 16 );
 		this.instanceColor = null;
 
 		this.count = count;
@@ -26,9 +24,9 @@ class InstancedMesh extends Mesh {
 
 	}
 
-	copy( source, recursive ) {
+	copy( source ) {
 
-		super.copy( source, recursive );
+		super.copy( source );
 
 		this.instanceMatrix.copy( source.instanceMatrix );
 
@@ -97,7 +95,7 @@ class InstancedMesh extends Mesh {
 
 		if ( this.instanceColor === null ) {
 
-			this.instanceColor = new InstancedBufferAttribute( new Float32Array( this.instanceMatrix.count * 3 ), 3 );
+			this.instanceColor = new BufferAttribute( new Float32Array( this.count * 3 ), 3 );
 
 		}
 
@@ -122,5 +120,7 @@ class InstancedMesh extends Mesh {
 	}
 
 }
+
+InstancedMesh.prototype.isInstancedMesh = true;
 
 export { InstancedMesh };

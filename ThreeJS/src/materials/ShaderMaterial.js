@@ -1,8 +1,26 @@
 import { Material } from './Material.js';
-import { cloneUniforms, cloneUniformsGroups } from '../renderers/shaders/UniformsUtils.js';
+import { cloneUniforms } from '../renderers/shaders/UniformsUtils.js';
 
 import default_vertex from '../renderers/shaders/ShaderChunk/default_vertex.glsl.js';
 import default_fragment from '../renderers/shaders/ShaderChunk/default_fragment.glsl.js';
+
+/**
+ * parameters = {
+ *  defines: { "label" : "value" },
+ *  uniforms: { "parameter1": { value: 1.0 }, "parameter2": { value2: 2 } },
+ *
+ *  fragmentShader: <string>,
+ *  vertexShader: <string>,
+ *
+ *  wireframe: <boolean>,
+ *  wireframeLinewidth: <float>,
+ *
+ *  lights: <bool>,
+ *
+ *  morphTargets: <bool>,
+ *  morphNormals: <bool>
+ * }
+ */
 
 class ShaderMaterial extends Material {
 
@@ -10,13 +28,10 @@ class ShaderMaterial extends Material {
 
 		super();
 
-		this.isShaderMaterial = true;
-
 		this.type = 'ShaderMaterial';
 
 		this.defines = {};
 		this.uniforms = {};
-		this.uniformsGroups = [];
 
 		this.vertexShader = default_vertex;
 		this.fragmentShader = default_fragment;
@@ -29,6 +44,9 @@ class ShaderMaterial extends Material {
 		this.fog = false; // set to use scene fog
 		this.lights = false; // set to use scene lights
 		this.clipping = false; // set to use user-defined clipping planes
+
+		this.morphTargets = false; // set to use morph targets
+		this.morphNormals = false; // set to use morph normals
 
 		this.extensions = {
 			derivatives: false, // set to use derivatives
@@ -52,6 +70,12 @@ class ShaderMaterial extends Material {
 
 		if ( parameters !== undefined ) {
 
+			if ( parameters.attributes !== undefined ) {
+
+				console.error( 'THREE.ShaderMaterial: attributes should now be defined in THREE.BufferGeometry instead.' );
+
+			}
+
 			this.setValues( parameters );
 
 		}
@@ -66,16 +90,17 @@ class ShaderMaterial extends Material {
 		this.vertexShader = source.vertexShader;
 
 		this.uniforms = cloneUniforms( source.uniforms );
-		this.uniformsGroups = cloneUniformsGroups( source.uniformsGroups );
 
 		this.defines = Object.assign( {}, source.defines );
 
 		this.wireframe = source.wireframe;
 		this.wireframeLinewidth = source.wireframeLinewidth;
 
-		this.fog = source.fog;
 		this.lights = source.lights;
 		this.clipping = source.clipping;
+
+		this.morphTargets = source.morphTargets;
+		this.morphNormals = source.morphNormals;
 
 		this.extensions = Object.assign( {}, source.extensions );
 
@@ -178,5 +203,7 @@ class ShaderMaterial extends Material {
 	}
 
 }
+
+ShaderMaterial.prototype.isShaderMaterial = true;
 
 export { ShaderMaterial };

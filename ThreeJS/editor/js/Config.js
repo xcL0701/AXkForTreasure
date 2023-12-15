@@ -1,9 +1,10 @@
 function Config() {
 
-	const name = 'threejs-editor';
+	var name = 'threejs-editor';
 
-	const storage = {
+	var storage = {
 		'language': 'en',
+		'exportPrecision': 6,
 
 		'autosave': true,
 
@@ -33,9 +34,9 @@ function Config() {
 
 	} else {
 
-		const data = JSON.parse( window.localStorage[ name ] );
+		var data = JSON.parse( window.localStorage[ name ] );
 
-		for ( const key in data ) {
+		for ( var key in data ) {
 
 			storage[ key ] = data[ key ];
 
@@ -53,7 +54,7 @@ function Config() {
 
 		setKey: function () { // key, value, key, value ...
 
-			for ( let i = 0, l = arguments.length; i < l; i += 2 ) {
+			for ( var i = 0, l = arguments.length; i < l; i += 2 ) {
 
 				storage[ arguments[ i ] ] = arguments[ i + 1 ];
 

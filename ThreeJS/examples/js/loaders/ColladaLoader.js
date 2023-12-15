@@ -1110,10 +1110,6 @@
 							data.parameters = parseEffectParameters( child );
 							break;
 
-						case 'extra':
-							data.extra = parseEffectExtra( child );
-							break;
-
 					}
 
 				}
@@ -1145,7 +1141,7 @@
 
 						case 'transparent':
 							data[ child.nodeName ] = {
-								opaque: child.hasAttribute( 'opaque' ) ? child.getAttribute( 'opaque' ) : 'A_ONE',
+								opaque: child.getAttribute( 'opaque' ),
 								data: parseEffectParameter( child )
 							};
 							break;
@@ -1271,10 +1267,6 @@
 
 							break;
 
-						case 'bump':
-							data[ child.nodeName ] = parseEffectExtraTechniqueBump( child );
-							break;
-
 					}
 
 				}
@@ -1317,37 +1309,6 @@
 
 						case 'double_sided':
 							data[ child.nodeName ] = parseInt( child.textContent );
-							break;
-
-						case 'bump':
-							data[ child.nodeName ] = parseEffectExtraTechniqueBump( child );
-							break;
-
-					}
-
-				}
-
-				return data;
-
-			}
-
-			function parseEffectExtraTechniqueBump( xml ) {
-
-				const data = {};
-
-				for ( let i = 0, l = xml.childNodes.length; i < l; i ++ ) {
-
-					const child = xml.childNodes[ i ];
-					if ( child.nodeType !== 1 ) continue;
-
-					switch ( child.nodeName ) {
-
-						case 'texture':
-							data[ child.nodeName ] = {
-								id: child.getAttribute( 'texture' ),
-								texcoord: child.getAttribute( 'texcoord' ),
-								extra: parseEffectParameterTexture( child )
-							};
 							break;
 
 					}
@@ -1422,6 +1383,7 @@
 
 				const effect = getEffect( data.url );
 				const technique = effect.profile.technique;
+				const extra = effect.profile.extra;
 				let material;
 
 				switch ( technique.type ) {
@@ -1443,7 +1405,7 @@
 
 				material.name = data.name || '';
 
-				function getTexture( textureObject, encoding = null ) {
+				function getTexture( textureObject ) {
 
 					const sampler = effect.profile.samplers[ textureObject.id ];
 					let image = null; // get image
@@ -1485,12 +1447,6 @@
 
 							}
 
-							if ( encoding !== null ) {
-
-								texture.encoding = encoding;
-
-							}
-
 							return texture;
 
 						} else {
@@ -1519,7 +1475,7 @@
 
 						case 'diffuse':
 							if ( parameter.color ) material.color.fromArray( parameter.color );
-							if ( parameter.texture ) material.map = getTexture( parameter.texture, THREE.sRGBEncoding );
+							if ( parameter.texture ) material.map = getTexture( parameter.texture );
 							break;
 
 						case 'specular':
@@ -1532,7 +1488,7 @@
 							break;
 
 						case 'ambient':
-							if ( parameter.texture ) material.lightMap = getTexture( parameter.texture, THREE.sRGBEncoding );
+							if ( parameter.texture ) material.lightMap = getTexture( parameter.texture );
 							break;
 
 						case 'shininess':
@@ -1541,16 +1497,13 @@
 
 						case 'emission':
 							if ( parameter.color && material.emissive ) material.emissive.fromArray( parameter.color );
-							if ( parameter.texture ) material.emissiveMap = getTexture( parameter.texture, THREE.sRGBEncoding );
+							if ( parameter.texture ) material.emissiveMap = getTexture( parameter.texture );
 							break;
 
 					}
 
-				}
+				} //
 
-				material.color.convertSRGBToLinear();
-				if ( material.specular ) material.specular.convertSRGBToLinear();
-				if ( material.emissive ) material.emissive.convertSRGBToLinear(); //
 
 				let transparent = parameters[ 'transparent' ];
 				let transparency = parameters[ 'transparency' ]; // <transparency> does not exist but <transparent>
@@ -1617,28 +1570,9 @@
 				} //
 
 
-				if ( technique.extra !== undefined && technique.extra.technique !== undefined ) {
+				if ( extra !== undefined && extra.technique !== undefined && extra.technique.double_sided === 1 ) {
 
-					const techniques = technique.extra.technique;
-
-					for ( const k in techniques ) {
-
-						const v = techniques[ k ];
-
-						switch ( k ) {
-
-							case 'double_sided':
-								material.side = v === 1 ? THREE.DoubleSide : THREE.FrontSide;
-								break;
-
-							case 'bump':
-								material.normalMap = getTexture( v.texture );
-								material.normalScale = new THREE.Vector2( 1, 1 );
-								break;
-
-						}
-
-					}
+					material.side = THREE.DoubleSide;
 
 				}
 
@@ -1860,7 +1794,7 @@
 
 						case 'color':
 							const array = parseFloats( child.textContent );
-							data.color = new THREE.Color().fromArray( array ).convertSRGBToLinear();
+							data.color = new THREE.Color().fromArray( array );
 							break;
 
 						case 'falloff_angle':
@@ -2319,7 +2253,7 @@
 								break;
 
 							case 'COLOR':
-								buildGeometryData( primitive, sources[ input.id ], input.offset, color.array, true );
+								buildGeometryData( primitive, sources[ input.id ], input.offset, color.array );
 								color.stride = sources[ input.id ].stride;
 								break;
 
@@ -2354,7 +2288,7 @@
 
 			}
 
-			function buildGeometryData( primitive, source, offset, array, isColor = false ) {
+			function buildGeometryData( primitive, source, offset, array ) {
 
 				const indices = primitive.p;
 				const stride = primitive.stride;
@@ -2368,17 +2302,6 @@
 					for ( ; index < length; index ++ ) {
 
 						array.push( sourceArray[ index ] );
-
-					}
-
-					if ( isColor ) {
-
-						// convert the vertex colors from srgb to linear if present
-						const startIndex = array.length - sourceStride - 1;
-						tempColor.setRGB( array[ startIndex + 0 ], array[ startIndex + 1 ], array[ startIndex + 2 ] ).convertSRGBToLinear();
-						array[ startIndex + 0 ] = tempColor.r;
-						array[ startIndex + 1 ] = tempColor.g;
-						array[ startIndex + 2 ] = tempColor.b;
 
 					}
 
@@ -2805,7 +2728,7 @@
 							const param = child.getElementsByTagName( 'param' )[ 0 ];
 							data.axis = param.textContent;
 							const tmpJointIndex = data.axis.split( 'inst_' ).pop().split( 'axis' )[ 0 ];
-							data.jointIndex = tmpJointIndex.substring( 0, tmpJointIndex.length - 1 );
+							data.jointIndex = tmpJointIndex.substr( 0, tmpJointIndex.length - 1 );
 							break;
 
 					}
@@ -3741,7 +3664,6 @@
 			} //
 
 
-			const tempColor = new THREE.Color();
 			const animations = [];
 			let kinematics = {};
 			let count = 0; //
@@ -3793,7 +3715,6 @@
 
 			if ( asset.upAxis === 'Z_UP' ) {
 
-				console.warn( 'THREE.ColladaLoader: You are loading an asset with a Z-UP coordinate system. The loader just rotates the asset to transform it into Y-UP. The vertex data are not converted, see #24289.' );
 				scene.quaternion.setFromEuler( new THREE.Euler( - Math.PI / 2, 0, 0 ) );
 
 			}

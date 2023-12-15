@@ -1,3 +1,5 @@
+// r129
+
 const cacheName = 'threejs-editor';
 
 const assets = [
@@ -43,14 +45,12 @@ const assets = [
 	'../examples/jsm/loaders/MD2Loader.js',
 	'../examples/jsm/loaders/OBJLoader.js',
 	'../examples/jsm/loaders/MTLLoader.js',
-	'../examples/jsm/loaders/PCDLoader.js',
 	'../examples/jsm/loaders/PLYLoader.js',
 	'../examples/jsm/loaders/RGBELoader.js',
 	'../examples/jsm/loaders/STLLoader.js',
 	'../examples/jsm/loaders/SVGLoader.js',
 	'../examples/jsm/loaders/TGALoader.js',
 	'../examples/jsm/loaders/TDSLoader.js',
-	'../examples/jsm/loaders/USDZLoader.js',
 	'../examples/jsm/loaders/VOXLoader.js',
 	'../examples/jsm/loaders/VRMLLoader.js',
 	'../examples/jsm/loaders/VTKLoader.js',
@@ -90,9 +90,7 @@ const assets = [
 	'./js/libs/codemirror/mode/javascript.js',
 	'./js/libs/codemirror/mode/glsl.js',
 
-	'./js/libs/es-module-shims.js',
 	'./js/libs/esprima.js',
-	'./js/libs/ffmpeg.min.js',
 	'./js/libs/jsonlint.js',
 
 	'./js/libs/codemirror/addon/dialog.css',
@@ -160,7 +158,6 @@ const assets = [
 	'./js/Sidebar.Geometry.BufferGeometry.js',
 	'./js/Sidebar.Geometry.Modifiers.js',
 	'./js/Sidebar.Geometry.BoxGeometry.js',
-	'./js/Sidebar.Geometry.CapsuleGeometry.js',
 	'./js/Sidebar.Geometry.CircleGeometry.js',
 	'./js/Sidebar.Geometry.CylinderGeometry.js',
 	'./js/Sidebar.Geometry.DodecahedronGeometry.js',
@@ -178,12 +175,6 @@ const assets = [
 	'./js/Sidebar.Geometry.TubeGeometry.js',
 	'./js/Sidebar.Geometry.TeapotGeometry.js',
 	'./js/Sidebar.Material.js',
-	'./js/Sidebar.Material.BooleanProperty.js',
-	'./js/Sidebar.Material.ColorProperty.js',
-	'./js/Sidebar.Material.ConstantProperty.js',
-	'./js/Sidebar.Material.MapProperty.js',
-	'./js/Sidebar.Material.NumberProperty.js',
-	'./js/Sidebar.Material.Program.js',
 	'./js/Sidebar.Animation.js',
 	'./js/Sidebar.Script.js',
 	'./js/Strings.js',
@@ -191,7 +182,6 @@ const assets = [
 	'./js/Viewport.js',
 	'./js/Viewport.Camera.js',
 	'./js/Viewport.Info.js',
-	'./js/Viewport.Selector.js',
 	'./js/Viewport.ViewHelper.js',
 	'./js/Viewport.VR.js',
 
@@ -233,17 +223,13 @@ self.addEventListener( 'install', async function () {
 
 	const cache = await caches.open( cacheName );
 
-	assets.forEach( async function ( asset ) {
+	assets.forEach( function ( asset ) {
 
-		try {
-
-			await cache.add( asset );
-
-		} catch {
+		cache.add( asset ).catch( function () {
 
 			console.warn( '[SW] Cound\'t cache:', asset );
 
-		}
+		} );
 
 	} );
 
@@ -252,34 +238,13 @@ self.addEventListener( 'install', async function () {
 self.addEventListener( 'fetch', async function ( event ) {
 
 	const request = event.request;
-
-	if ( request.url.startsWith( 'chrome-extension' ) ) return;
-
 	event.respondWith( networkFirst( request ) );
 
 } );
 
 async function networkFirst( request ) {
 
-	try {
-
-		let response = await fetch( request );
-
-		if ( request.url.endsWith( 'editor/' ) || request.url.endsWith( 'editor/index.html' ) ) { // copied from coi-serviceworker
-
-			const newHeaders = new Headers( response.headers );
-			newHeaders.set( "Cross-Origin-Embedder-Policy", "require-corp" );
-			newHeaders.set( "Cross-Origin-Opener-Policy", "same-origin" );
-
-			response = new Response( response.body, { status: response.status, statusText: response.statusText, headers: newHeaders } );
-
-		}
-
-		const cache = await caches.open( cacheName );
-		cache.put( request, response.clone() );
-		return response;
-
-	} catch {
+	return fetch( request ).catch( async function () {
 
 		const cachedResponse = await caches.match( request );
 
@@ -291,6 +256,23 @@ async function networkFirst( request ) {
 
 		return cachedResponse;
 
-	}
+	} );
 
 }
+
+/*
+async function cacheFirst( request ) {
+
+	const cachedResponse = await caches.match( request );
+
+	if ( cachedResponse === undefined ) {
+
+		console.warn( '[SW] Not cached:', request.url );
+		return fetch( request );
+
+	}
+
+	return cachedResponse;
+
+}
+*/

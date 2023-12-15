@@ -1,24 +1,24 @@
-import * as THREE from 'three';
+import * as THREE from '../../build/three.module.js';
 
-import { UIDiv, UIRow, UIText, UIInteger, UINumber } from './libs/ui.js';
+import { UIRow, UIText, UIInteger, UINumber } from './libs/ui.js';
 
 import { SetGeometryCommand } from './commands/SetGeometryCommand.js';
 
 function GeometryParametersPanel( editor, object ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const signals = editor.signals;
+	var signals = editor.signals;
 
-	const container = new UIDiv();
+	var container = new UIRow();
 
-	const geometry = object.geometry;
-	const parameters = geometry.parameters;
+	var geometry = object.geometry;
+	var parameters = geometry.parameters;
 
 	// radius
 
-	const radiusRow = new UIRow();
-	const radius = new UINumber( parameters.radius ).onChange( update );
+	var radiusRow = new UIRow();
+	var radius = new UINumber( parameters.radius ).onChange( update );
 
 	radiusRow.add( new UIText( strings.getKey( 'sidebar/geometry/octahedron_geometry/radius' ) ).setWidth( '90px' ) );
 	radiusRow.add( radius );
@@ -27,8 +27,8 @@ function GeometryParametersPanel( editor, object ) {
 
 	// detail
 
-	const detailRow = new UIRow();
-	const detail = new UIInteger( parameters.detail ).setRange( 0, Infinity ).onChange( update );
+	var detailRow = new UIRow();
+	var detail = new UIInteger( parameters.detail ).setRange( 0, Infinity ).onChange( update );
 
 	detailRow.add( new UIText( strings.getKey( 'sidebar/geometry/octahedron_geometry/detail' ) ).setWidth( '90px' ) );
 	detailRow.add( detail );

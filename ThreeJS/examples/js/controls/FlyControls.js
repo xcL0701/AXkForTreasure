@@ -9,6 +9,14 @@
 		constructor( object, domElement ) {
 
 			super();
+
+			if ( domElement === undefined ) {
+
+				console.warn( 'THREE.FlyControls: The second parameter "domElement" is now mandatory.' );
+				domElement = document;
+
+			}
+
 			this.object = object;
 			this.domElement = domElement; // API
 
@@ -47,7 +55,8 @@
 
 					return;
 
-				}
+				} //event.preventDefault();
+
 
 				switch ( event.code ) {
 
@@ -177,6 +186,14 @@
 
 			this.mousedown = function ( event ) {
 
+				if ( this.domElement !== document ) {
+
+					this.domElement.focus();
+
+				}
+
+				event.preventDefault();
+
 				if ( this.dragToLook ) {
 
 					this.mouseStatus ++;
@@ -217,6 +234,8 @@
 			};
 
 			this.mouseup = function ( event ) {
+
+				event.preventDefault();
 
 				if ( this.dragToLook ) {
 

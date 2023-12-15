@@ -11,8 +11,8 @@ function Resizer( editor ) {
 
 		if ( event.isPrimary === false ) return;
 
-		dom.ownerDocument.addEventListener( 'pointermove', onPointerMove );
-		dom.ownerDocument.addEventListener( 'pointerup', onPointerUp );
+		dom.ownerDocument.addEventListener( 'pointermove', onPointerMove, false );
+		dom.ownerDocument.addEventListener( 'pointerup', onPointerUp, false );
 
 	}
 
@@ -31,25 +31,19 @@ function Resizer( editor ) {
 
 		if ( event.isPrimary === false ) return;
 
-		const offsetWidth = document.body.offsetWidth;
-		const clientX = event.clientX;
-
-		const cX = clientX < 0 ? 0 : clientX > offsetWidth ? offsetWidth : clientX;
-
-		const x = offsetWidth - cX;
+		const rect = dom.getBoundingClientRect();
+		const x = ( document.body.offsetWidth - rect.right ) - event.movementX;
 
 		dom.style.right = x + 'px';
 
-		document.getElementById( 'sidebar' ).style.width = x + 'px';
-		document.getElementById( 'player' ).style.right = x + 'px';
-		document.getElementById( 'script' ).style.right = x + 'px';
-		document.getElementById( 'viewport' ).style.right = x + 'px';
+		document.getElementById( 'sidebar' ).style.width = ( x + rect.width ) + 'px';
+		document.getElementById( 'viewport' ).style.right = ( x + rect.width ) + 'px';
 
 		signals.windowResize.dispatch();
 
 	}
 
-	dom.addEventListener( 'pointerdown', onPointerDown );
+	dom.addEventListener( 'pointerdown', onPointerDown, false );
 
 	return new UIElement( dom );
 

@@ -2,19 +2,19 @@ import { UIPanel, UIButton, UICheckbox } from './libs/ui.js';
 
 function Toolbar( editor ) {
 
-	const signals = editor.signals;
-	const strings = editor.strings;
+	var signals = editor.signals;
+	var strings = editor.strings;
 
-	const container = new UIPanel();
+	var container = new UIPanel();
 	container.setId( 'toolbar' );
 
 	// translate / rotate / scale
 
-	const translateIcon = document.createElement( 'img' );
+	var translateIcon = document.createElement( 'img' );
 	translateIcon.title = strings.getKey( 'toolbar/translate' );
 	translateIcon.src = 'images/translate.svg';
 
-	const translate = new UIButton();
+	var translate = new UIButton();
 	translate.dom.className = 'Button selected';
 	translate.dom.appendChild( translateIcon );
 	translate.onClick( function () {
@@ -24,11 +24,11 @@ function Toolbar( editor ) {
 	} );
 	container.add( translate );
 
-	const rotateIcon = document.createElement( 'img' );
+	var rotateIcon = document.createElement( 'img' );
 	rotateIcon.title = strings.getKey( 'toolbar/rotate' );
 	rotateIcon.src = 'images/rotate.svg';
 
-	const rotate = new UIButton();
+	var rotate = new UIButton();
 	rotate.dom.appendChild( rotateIcon );
 	rotate.onClick( function () {
 
@@ -37,11 +37,11 @@ function Toolbar( editor ) {
 	} );
 	container.add( rotate );
 
-	const scaleIcon = document.createElement( 'img' );
+	var scaleIcon = document.createElement( 'img' );
 	scaleIcon.title = strings.getKey( 'toolbar/scale' );
 	scaleIcon.src = 'images/scale.svg';
 
-	const scale = new UIButton();
+	var scale = new UIButton();
 	scale.dom.appendChild( scaleIcon );
 	scale.onClick( function () {
 
@@ -50,7 +50,7 @@ function Toolbar( editor ) {
 	} );
 	container.add( scale );
 
-	const local = new UICheckbox( false );
+	var local = new UICheckbox( false );
 	local.dom.title = strings.getKey( 'toolbar/local' );
 	local.onChange( function () {
 

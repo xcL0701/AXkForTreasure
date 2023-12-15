@@ -9,7 +9,9 @@
 			width,
 			height,
 			selects,
+			encoding,
 			bouncing = false,
+			morphTargets = false,
 			groundReflector
 		} ) {
 
@@ -25,6 +27,7 @@
 			this.output = 0;
 			this.maxDistance = THREE.SSRShader.uniforms.maxDistance.value;
 			this.thickness = THREE.SSRShader.uniforms.thickness.value;
+			this.encoding = encoding;
 			this.tempColor = new THREE.Color();
 			this._selects = selects;
 			this.selective = Array.isArray( this._selects );
@@ -146,29 +149,34 @@
 			this.beautyRenderTarget = new THREE.WebGLRenderTarget( this.width, this.height, {
 				minFilter: THREE.NearestFilter,
 				magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat,
 				depthTexture: depthTexture,
 				depthBuffer: true
 			} ); //for bouncing
 
 			this.prevRenderTarget = new THREE.WebGLRenderTarget( this.width, this.height, {
 				minFilter: THREE.NearestFilter,
-				magFilter: THREE.NearestFilter
+				magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat
 			} ); // normal render target
 
 			this.normalRenderTarget = new THREE.WebGLRenderTarget( this.width, this.height, {
 				minFilter: THREE.NearestFilter,
 				magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat,
 				type: THREE.HalfFloatType
 			} ); // metalness render target
 
 			this.metalnessRenderTarget = new THREE.WebGLRenderTarget( this.width, this.height, {
 				minFilter: THREE.NearestFilter,
-				magFilter: THREE.NearestFilter
+				magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat
 			} ); // ssr render target
 
 			this.ssrRenderTarget = new THREE.WebGLRenderTarget( this.width, this.height, {
 				minFilter: THREE.NearestFilter,
-				magFilter: THREE.NearestFilter
+				magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat
 			} );
 			this.blurRenderTarget = this.ssrRenderTarget.clone();
 			this.blurRenderTarget2 = this.ssrRenderTarget.clone(); // this.blurRenderTarget3 = this.ssrRenderTarget.clone();
@@ -202,7 +210,9 @@
 			this.ssrMaterial.uniforms[ 'cameraProjectionMatrix' ].value.copy( this.camera.projectionMatrix );
 			this.ssrMaterial.uniforms[ 'cameraInverseProjectionMatrix' ].value.copy( this.camera.projectionMatrixInverse ); // normal material
 
-			this.normalMaterial = new THREE.MeshNormalMaterial();
+			this.normalMaterial = new THREE.MeshNormalMaterial( {
+				morphTargets
+			} );
 			this.normalMaterial.blending = THREE.NoBlending; // metalnessOn material
 
 			this.metalnessOnMaterial = new THREE.MeshBasicMaterial( {
@@ -300,6 +310,7 @@
 		) {
 
 			// render beauty and depth
+			if ( this.encoding ) this.beautyRenderTarget.texture.encoding = this.encoding;
 			renderer.setRenderTarget( this.beautyRenderTarget );
 			renderer.clear();
 

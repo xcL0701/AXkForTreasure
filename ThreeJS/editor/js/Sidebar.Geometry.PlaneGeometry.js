@@ -1,22 +1,22 @@
-import * as THREE from 'three';
+import * as THREE from '../../build/three.module.js';
 
-import { UIDiv, UIRow, UIText, UIInteger, UINumber } from './libs/ui.js';
+import { UIRow, UIText, UIInteger, UINumber } from './libs/ui.js';
 
 import { SetGeometryCommand } from './commands/SetGeometryCommand.js';
 
 function GeometryParametersPanel( editor, object ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const container = new UIDiv();
+	var container = new UIRow();
 
-	const geometry = object.geometry;
-	const parameters = geometry.parameters;
+	var geometry = object.geometry;
+	var parameters = geometry.parameters;
 
 	// width
 
-	const widthRow = new UIRow();
-	const width = new UINumber( parameters.width ).onChange( update );
+	var widthRow = new UIRow();
+	var width = new UINumber( parameters.width ).onChange( update );
 
 	widthRow.add( new UIText( strings.getKey( 'sidebar/geometry/plane_geometry/width' ) ).setWidth( '90px' ) );
 	widthRow.add( width );
@@ -25,8 +25,8 @@ function GeometryParametersPanel( editor, object ) {
 
 	// height
 
-	const heightRow = new UIRow();
-	const height = new UINumber( parameters.height ).onChange( update );
+	var heightRow = new UIRow();
+	var height = new UINumber( parameters.height ).onChange( update );
 
 	heightRow.add( new UIText( strings.getKey( 'sidebar/geometry/plane_geometry/height' ) ).setWidth( '90px' ) );
 	heightRow.add( height );
@@ -35,8 +35,8 @@ function GeometryParametersPanel( editor, object ) {
 
 	// widthSegments
 
-	const widthSegmentsRow = new UIRow();
-	const widthSegments = new UIInteger( parameters.widthSegments ).setRange( 1, Infinity ).onChange( update );
+	var widthSegmentsRow = new UIRow();
+	var widthSegments = new UIInteger( parameters.widthSegments ).setRange( 1, Infinity ).onChange( update );
 
 	widthSegmentsRow.add( new UIText( strings.getKey( 'sidebar/geometry/plane_geometry/widthsegments' ) ).setWidth( '90px' ) );
 	widthSegmentsRow.add( widthSegments );
@@ -45,8 +45,8 @@ function GeometryParametersPanel( editor, object ) {
 
 	// heightSegments
 
-	const heightSegmentsRow = new UIRow();
-	const heightSegments = new UIInteger( parameters.heightSegments ).setRange( 1, Infinity ).onChange( update );
+	var heightSegmentsRow = new UIRow();
+	var heightSegments = new UIInteger( parameters.heightSegments ).setRange( 1, Infinity ).onChange( update );
 
 	heightSegmentsRow.add( new UIText( strings.getKey( 'sidebar/geometry/plane_geometry/heightsegments' ) ).setWidth( '90px' ) );
 	heightSegmentsRow.add( heightSegments );

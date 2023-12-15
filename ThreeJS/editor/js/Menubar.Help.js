@@ -2,23 +2,23 @@ import { UIPanel, UIRow } from './libs/ui.js';
 
 function MenubarHelp( editor ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const container = new UIPanel();
+	var container = new UIPanel();
 	container.setClass( 'menu' );
 
-	const title = new UIPanel();
+	var title = new UIPanel();
 	title.setClass( 'title' );
 	title.setTextContent( strings.getKey( 'menubar/help' ) );
 	container.add( title );
 
-	const options = new UIPanel();
+	var options = new UIPanel();
 	options.setClass( 'options' );
 	container.add( options );
 
 	// Source code
 
-	let option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/help/source_code' ) );
 	option.onClick( function () {
@@ -31,7 +31,7 @@ function MenubarHelp( editor ) {
 	/*
 	// Icon
 
-	let option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/help/icons' ) );
 	option.onClick( function () {
@@ -44,24 +44,12 @@ function MenubarHelp( editor ) {
 
 	// About
 
-	option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/help/about' ) );
 	option.onClick( function () {
 
 		window.open( 'https://threejs.org', '_blank' );
-
-	} );
-	options.add( option );
-
-	// Manual
-
-	option = new UIRow();
-	option.setClass( 'option' );
-	option.setTextContent( strings.getKey( 'menubar/help/manual' ) );
-	option.onClick( function () {
-
-		window.open( 'https://github.com/mrdoob/three.js/wiki/Editor-Manual', '_blank' );
 
 	} );
 	options.add( option );

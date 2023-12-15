@@ -1,35 +1,27 @@
 import WebGPUNodeBuilder from './WebGPUNodeBuilder.js';
-import { NodeFrame } from 'three/nodes';
+import NodeFrame from '../../nodes/core/NodeFrame.js';
 
 class WebGPUNodes {
 
-	constructor( renderer, properties ) {
+	constructor( renderer ) {
 
 		this.renderer = renderer;
-		this.properties = properties;
 
 		this.nodeFrame = new NodeFrame();
+
+		this.builders = new WeakMap();
 
 	}
 
 	get( object ) {
 
-		const objectProperties = this.properties.get( object );
-
-		let nodeBuilder = objectProperties.nodeBuilder;
+		let nodeBuilder = this.builders.get( object );
 
 		if ( nodeBuilder === undefined ) {
 
-			const scene = objectProperties.scene;
-			const lightsNode = objectProperties.lightsNode;
+			nodeBuilder = new WebGPUNodeBuilder( object.material, this.renderer ).build();
 
-			nodeBuilder = new WebGPUNodeBuilder( object, this.renderer );
-			nodeBuilder.lightsNode = lightsNode;
-			nodeBuilder.fogNode = scene?.fogNode;
-			nodeBuilder.scene = scene;
-			nodeBuilder.build();
-
-			objectProperties.nodeBuilder = nodeBuilder;
+			this.builders.set( object, nodeBuilder );
 
 		}
 
@@ -39,9 +31,7 @@ class WebGPUNodes {
 
 	remove( object ) {
 
-		const objectProperties = this.properties.get( object );
-
-		delete objectProperties.nodeBuilder;
+		this.builders.delete( object );
 
 	}
 
@@ -53,16 +43,14 @@ class WebGPUNodes {
 
 	update( object, camera ) {
 
-		const renderer = this.renderer;
 		const material = object.material;
 
 		const nodeBuilder = this.get( object );
 		const nodeFrame = this.nodeFrame;
 
-		nodeFrame.object = object;
-		nodeFrame.camera = camera;
-		nodeFrame.renderer = renderer;
 		nodeFrame.material = material;
+		nodeFrame.camera = camera;
+		nodeFrame.object = object;
 
 		for ( const node of nodeBuilder.updateNodes ) {
 
@@ -74,7 +62,7 @@ class WebGPUNodes {
 
 	dispose() {
 
-		this.nodeFrame = new NodeFrame();
+		this.builders = new WeakMap();
 
 	}
 

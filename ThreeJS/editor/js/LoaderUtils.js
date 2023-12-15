@@ -1,12 +1,12 @@
-const LoaderUtils = {
+var LoaderUtils = {
 
 	createFilesMap: function ( files ) {
 
-		const map = {};
+		var map = {};
 
-		for ( let i = 0; i < files.length; i ++ ) {
+		for ( var i = 0; i < files.length; i ++ ) {
 
-			const file = files[ i ];
+			var file = files[ i ];
 			map[ file.name ] = file;
 
 		}
@@ -19,11 +19,11 @@ const LoaderUtils = {
 
 		// TOFIX: setURLModifier() breaks when the file being loaded is not in root
 
-		let itemsCount = 0;
-		let itemsTotal = 0;
+		var itemsCount = 0;
+		var itemsTotal = 0;
 
-		const files = [];
-		const filesMap = {};
+		var files = [];
+		var filesMap = {};
 
 		function onEntryHandled() {
 
@@ -41,10 +41,10 @@ const LoaderUtils = {
 
 			if ( entry.isDirectory ) {
 
-				const reader = entry.createReader();
+				var reader = entry.createReader();
 				reader.readEntries( function ( entries ) {
 
-					for ( let i = 0; i < entries.length; i ++ ) {
+					for ( var i = 0; i < entries.length; i ++ ) {
 
 						handleEntry( entries[ i ] );
 
@@ -60,7 +60,7 @@ const LoaderUtils = {
 
 					files.push( file );
 
-					filesMap[ entry.fullPath.slice( 1 ) ] = file;
+					filesMap[ entry.fullPath.substr( 1 ) ] = file;
 					onEntryHandled();
 
 				} );
@@ -71,9 +71,9 @@ const LoaderUtils = {
 
 		}
 
-		for ( let i = 0; i < items.length; i ++ ) {
+		for ( var i = 0; i < items.length; i ++ ) {
 
-			const item = items[ i ];
+			var item = items[ i ];
 
 			if ( item.kind === 'file' ) {
 

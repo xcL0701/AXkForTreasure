@@ -1,13 +1,12 @@
 import { Matrix4 } from '../math/Matrix4.js';
 import { Object3D } from '../core/Object3D.js';
+import { Vector3 } from '../math/Vector3.js';
 
 class Camera extends Object3D {
 
 	constructor() {
 
 		super();
-
-		this.isCamera = true;
 
 		this.type = 'Camera';
 
@@ -32,6 +31,13 @@ class Camera extends Object3D {
 	}
 
 	getWorldDirection( target ) {
+
+		if ( target === undefined ) {
+
+			console.warn( 'THREE.Camera: .getWorldDirection() target is now required' );
+			target = new Vector3();
+
+		}
 
 		this.updateWorldMatrix( true, false );
 
@@ -64,5 +70,7 @@ class Camera extends Object3D {
 	}
 
 }
+
+Camera.prototype.isCamera = true;
 
 export { Camera };

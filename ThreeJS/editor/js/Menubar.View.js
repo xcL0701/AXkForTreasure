@@ -2,23 +2,23 @@ import { UIPanel, UIRow } from './libs/ui.js';
 
 function MenubarView( editor ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const container = new UIPanel();
+	var container = new UIPanel();
 	container.setClass( 'menu' );
 
-	const title = new UIPanel();
+	var title = new UIPanel();
 	title.setClass( 'title' );
 	title.setTextContent( strings.getKey( 'menubar/view' ) );
 	container.add( title );
 
-	const options = new UIPanel();
+	var options = new UIPanel();
 	options.setClass( 'options' );
 	container.add( options );
 
 	// Fullscreen
 
-	const option = new UIRow();
+	var option = new UIRow();
 	option.setClass( 'option' );
 	option.setTextContent( strings.getKey( 'menubar/view/fullscreen' ) );
 	option.onClick( function () {
@@ -57,7 +57,7 @@ function MenubarView( editor ) {
 
 				if ( supported ) {
 
-					const option = new UIRow();
+					var option = new UIRow();
 					option.setClass( 'option' );
 					option.setTextContent( 'VR' );
 					option.onClick( function () {

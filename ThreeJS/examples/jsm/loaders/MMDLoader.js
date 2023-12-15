@@ -5,7 +5,6 @@ import {
 	BufferGeometry,
 	Color,
 	CustomBlending,
-	TangentSpaceNormalMap,
 	DoubleSide,
 	DstAlphaFactor,
 	Euler,
@@ -15,8 +14,7 @@ import {
 	Interpolant,
 	Loader,
 	LoaderUtils,
-	UniformsUtils,
-	ShaderMaterial,
+	MeshToonMaterial,
 	MultiplyOperation,
 	NearestFilter,
 	NumberKeyframeTrack,
@@ -36,8 +34,7 @@ import {
 	RGB_PVRTC_2BPPV1_Format,
 	RGB_ETC1_Format,
 	RGB_ETC2_Format
-} from 'three';
-import { MMDToonShader } from '../shaders/MMDToonShader.js';
+} from '../../../build/three.module.js';
 import { TGALoader } from '../loaders/TGALoader.js';
 import { MMDParser } from '../libs/mmdparser.module.js';
 
@@ -357,6 +354,7 @@ class MMDLoader extends Loader {
 /*
 	 * base64 encoded defalut toon textures toon00.bmp - toon10.bmp.
 	 * We don't need to request external toon image files.
+	 * This idea is from http://www20.atpages.jp/katwat/three.js_r58/examples/mytest37/mmd.three.js
 	 */
 const DEFAULT_TOON_TEXTURES = [
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAL0lEQVRYR+3QQREAAAzCsOFfNJPBJ1XQS9r2hsUAAQIECBAgQIAAAQIECBAgsBZ4MUx/ofm2I/kAAAAASUVORK5CYII=',
@@ -1077,7 +1075,7 @@ class MaterialBuilder {
 	 * @param {BufferGeometry} geometry - some properties are dependend on geometry
 	 * @param {function} onProgress
 	 * @param {function} onError
-	 * @return {Array<MMDToonMaterial>}
+	 * @return {Array<MeshToonMaterial>}
 	 */
 	build( data, geometry /*, onProgress, onError */ ) {
 
@@ -1093,29 +1091,29 @@ class MaterialBuilder {
 
 			const material = data.materials[ i ];
 
-			const params = { userData: { MMD: {} } };
+			const params = { userData: {} };
 
 			if ( material.name !== undefined ) params.name = material.name;
 
 			/*
 				 * Color
 				 *
-				 * MMD         MMDToonMaterial
+				 * MMD         MeshToonMaterial
+				 * diffuse  -  color
 				 * ambient  -  emissive * a
 				 *               (a = 1.0 without map texture or 0.2 with map texture)
 				 *
-				 * MMDToonMaterial doesn't have ambient. Set it to emissive instead.
+				 * MeshToonMaterial doesn't have ambient. Set it to emissive instead.
 				 * It'll be too bright if material has map texture so using coef 0.2.
 				 */
-			params.diffuse = new Color().fromArray( material.diffuse );
+			params.color = new Color().fromArray( material.diffuse );
 			params.opacity = material.diffuse[ 3 ];
-			params.specular = new Color().fromArray( material.specular );
-			params.shininess = material.shininess;
 			params.emissive = new Color().fromArray( material.ambient );
 			params.transparent = params.opacity !== 1.0;
 
 			//
 
+			params.morphTargets = geometry.morphTargets.length > 0 ? true : false;
 			params.fog = true;
 
 			// blend
@@ -1201,26 +1199,18 @@ class MaterialBuilder {
 
 					params.map = this._loadTexture( data.textures[ material.textureIndex ], textures );
 
-					// Since PMX spec don't have standard to list map files except color map and env map,
-					// we need to save file name for further mapping, like matching normal map file names after model loaded.
-					// ref: https://gist.github.com/felixjones/f8a06bd48f9da9a4539f#texture
-					params.userData.MMD.mapFileName = data.textures[ material.textureIndex ];
-
 				}
 
 				// envMap TODO: support m.envFlag === 3
 
 				if ( material.envTextureIndex !== - 1 && ( material.envFlag === 1 || material.envFlag == 2 ) ) {
 
-					params.matcap = this._loadTexture(
+					params.envMap = this._loadTexture(
 						data.textures[ material.envTextureIndex ],
 						textures
 					);
 
-					// Same as color map above, keep file name in userData for further usage.
-					params.userData.MMD.matcapFileName = data.textures[ material.envTextureIndex ];
-
-					params.matcapCombine = material.envFlag === 1
+					params.combine = material.envFlag === 1
 						? MultiplyOperation
 						: AddOperation;
 
@@ -1273,7 +1263,7 @@ class MaterialBuilder {
 
 			}
 
-			materials.push( new MMDToonMaterial( params ) );
+			materials.push( new MeshToonMaterial( params ) );
 
 		}
 
@@ -2069,171 +2059,6 @@ class CubicBezierInterpolation extends Interpolant {
 		}
 
 		return ( sst3 * y1 ) + ( stt3 * y2 ) + ttt;
-
-	}
-
-}
-
-class MMDToonMaterial extends ShaderMaterial {
-
-	constructor( parameters ) {
-
-		super();
-
-		this.isMMDToonMaterial = true;
-
-		this._matcapCombine = AddOperation;
-		this.emissiveIntensity = 1.0;
-		this.normalMapType = TangentSpaceNormalMap;
-
-		this.combine = MultiplyOperation;
-
-		this.wireframeLinecap = 'round';
-		this.wireframeLinejoin = 'round';
-
-		this.flatShading = false;
-
-		this.lights = true;
-
-		this.vertexShader = MMDToonShader.vertexShader;
-		this.fragmentShader = MMDToonShader.fragmentShader;
-
-		this.defines = Object.assign( {}, MMDToonShader.defines );
-		Object.defineProperty( this, 'matcapCombine', {
-
-			get: function () {
-
-				return this._matcapCombine;
-
-			},
-
-			set: function ( value ) {
-
-				this._matcapCombine = value;
-
-				switch ( value ) {
-
-					case MultiplyOperation:
-						this.defines.MATCAP_BLENDING_MULTIPLY = true;
-						delete this.defines.MATCAP_BLENDING_ADD;
-						break;
-
-					default:
-					case AddOperation:
-						this.defines.MATCAP_BLENDING_ADD = true;
-						delete this.defines.MATCAP_BLENDING_MULTIPLY;
-						break;
-
-				}
-
-			},
-
-		} );
-
-		this.uniforms = UniformsUtils.clone( MMDToonShader.uniforms );
-
-		// merged from MeshToon/Phong/MatcapMaterial
-		const exposePropertyNames = [
-			'specular',
-			'opacity',
-			'diffuse',
-
-			'map',
-			'matcap',
-			'gradientMap',
-
-			'lightMap',
-			'lightMapIntensity',
-
-			'aoMap',
-			'aoMapIntensity',
-
-			'emissive',
-			'emissiveMap',
-
-			'bumpMap',
-			'bumpScale',
-
-			'normalMap',
-			'normalScale',
-
-			'displacemantBias',
-			'displacemantMap',
-			'displacemantScale',
-
-			'specularMap',
-
-			'alphaMap',
-
-			'envMap',
-			'reflectivity',
-			'refractionRatio',
-		];
-		for ( const propertyName of exposePropertyNames ) {
-
-			Object.defineProperty( this, propertyName, {
-
-				get: function () {
-
-					return this.uniforms[ propertyName ].value;
-
-				},
-
-				set: function ( value ) {
-
-					this.uniforms[ propertyName ].value = value;
-
-				},
-
-			} );
-
-		}
-
-		// Special path for shininess to handle zero shininess properly
-		this._shininess = 30;
-		Object.defineProperty( this, 'shininess', {
-
-			get: function () {
-
-				return this._shininess;
-
-			},
-
-			set: function ( value ) {
-
-				this._shininess = value;
-				this.uniforms.shininess.value = Math.max( this._shininess, 1e-4 ); // To prevent pow( 0.0, 0.0 )
-
-			},
-
-		} );
-
-		Object.defineProperty(
-			this,
-			'color',
-			Object.getOwnPropertyDescriptor( this, 'diffuse' )
-		);
-
-		this.setValues( parameters );
-
-	}
-
-	copy( source ) {
-
-		super.copy( source );
-
-		this.matcapCombine = source.matcapCombine;
-		this.emissiveIntensity = source.emissiveIntensity;
-		this.normalMapType = source.normalMapType;
-
-		this.combine = source.combine;
-
-		this.wireframeLinecap = source.wireframeLinecap;
-		this.wireframeLinejoin = source.wireframeLinejoin;
-
-		this.flatShading = source.flatShading;
-
-		return this;
 
 	}
 

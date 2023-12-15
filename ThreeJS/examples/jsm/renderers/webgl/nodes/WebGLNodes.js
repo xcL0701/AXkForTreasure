@@ -1,49 +1,44 @@
 import { WebGLNodeBuilder } from './WebGLNodeBuilder.js';
-import { NodeFrame } from 'three/nodes';
 
-import { Material } from 'three';
+import { Material } from '../../../../../build/three.module.js';
 
-const builders = new WeakMap();
-export const nodeFrame = new NodeFrame();
+function addCodeAfterSnippet( source, snippet, code ) {
 
-Material.prototype.onBuild = function ( object, parameters, renderer ) {
+	const index = source.indexOf( snippet );
 
-	if ( object.material.isNodeMaterial === true ) {
+	if ( index !== - 1 ) {
 
-		builders.set( this, new WebGLNodeBuilder( object, renderer, parameters ).build() );
+		const start = source.substring( 0, index + snippet.length );
+		const end = source.substring( index + snippet.length );
 
-	}
-
-};
-
-Material.prototype.onBeforeRender = function ( renderer, scene, camera, geometry, object ) {
-
-	const nodeBuilder = builders.get( this );
-
-	if ( nodeBuilder !== undefined ) {
-
-		nodeFrame.material = this;
-		nodeFrame.camera = camera;
-		nodeFrame.object = object;
-		nodeFrame.renderer = renderer;
-
-		const updateNodes = nodeBuilder.updateNodes;
-
-		if ( updateNodes.length > 0 ) {
-
-			// force refresh material uniforms
-			renderer.state.useProgram( null );
-
-			//this.uniformsNeedUpdate = true;
-
-			for ( const node of updateNodes ) {
-
-				nodeFrame.updateNode( node );
-
-			}
-
-		}
+		return `${start}\n${code}\n${end}`;
 
 	}
+
+	return source;
+
+}
+
+Material.prototype.onBuild = function ( parameters, renderer ) {
+
+	new WebGLNodeBuilder( this, renderer, parameters ).build();
+
+	let fragmentShader = parameters.fragmentShader;
+
+	fragmentShader = addCodeAfterSnippet( fragmentShader, '#include <color_pars_fragment>',
+		`#ifdef NODE_HEADER_UNIFORMS
+
+			NODE_HEADER_UNIFORMS
+
+		#endif` );
+
+	fragmentShader = addCodeAfterSnippet( fragmentShader, '#include <color_fragment>',
+		`#ifdef NODE_COLOR
+
+			diffuseColor = NODE_COLOR;
+
+		#endif` );
+
+	parameters.fragmentShader = fragmentShader;
 
 };

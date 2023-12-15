@@ -468,12 +468,16 @@
 
 			const materialWireframe = new THREE.MeshLambertMaterial( {
 				color: 0xffaa00,
-				wireframe: true
+				wireframe: true,
+				morphTargets: true,
+				morphNormals: true
 			} );
 			const materialTexture = new THREE.MeshLambertMaterial( {
 				color: 0xffffff,
 				wireframe: false,
-				map: skinMap
+				map: skinMap,
+				morphTargets: true,
+				morphNormals: true
 			} ); //
 
 			const mesh = new THREE.MorphBlendMesh( geometry, materialTexture );

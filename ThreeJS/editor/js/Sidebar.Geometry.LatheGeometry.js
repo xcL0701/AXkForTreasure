@@ -1,23 +1,23 @@
-import * as THREE from 'three';
+import * as THREE from '../../build/three.module.js';
 
-import { UIDiv, UIRow, UIText, UIInteger, UINumber } from './libs/ui.js';
+import { UIRow, UIText, UIInteger, UINumber } from './libs/ui.js';
 import { UIPoints2 } from './libs/ui.three.js';
 
 import { SetGeometryCommand } from './commands/SetGeometryCommand.js';
 
 function GeometryParametersPanel( editor, object ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const container = new UIDiv();
+	var container = new UIRow();
 
-	const geometry = object.geometry;
-	const parameters = geometry.parameters;
+	var geometry = object.geometry;
+	var parameters = geometry.parameters;
 
 	// segments
 
-	const segmentsRow = new UIRow();
-	const segments = new UIInteger( parameters.segments ).onChange( update );
+	var segmentsRow = new UIRow();
+	var segments = new UIInteger( parameters.segments ).onChange( update );
 
 	segmentsRow.add( new UIText( strings.getKey( 'sidebar/geometry/lathe_geometry/segments' ) ).setWidth( '90px' ) );
 	segmentsRow.add( segments );
@@ -26,8 +26,8 @@ function GeometryParametersPanel( editor, object ) {
 
 	// phiStart
 
-	const phiStartRow = new UIRow();
-	const phiStart = new UINumber( parameters.phiStart * 180 / Math.PI ).onChange( update );
+	var phiStartRow = new UIRow();
+	var phiStart = new UINumber( parameters.phiStart * 180 / Math.PI ).onChange( update );
 
 	phiStartRow.add( new UIText( strings.getKey( 'sidebar/geometry/lathe_geometry/phistart' ) ).setWidth( '90px' ) );
 	phiStartRow.add( phiStart );
@@ -36,8 +36,8 @@ function GeometryParametersPanel( editor, object ) {
 
 	// phiLength
 
-	const phiLengthRow = new UIRow();
-	const phiLength = new UINumber( parameters.phiLength * 180 / Math.PI ).onChange( update );
+	var phiLengthRow = new UIRow();
+	var phiLength = new UINumber( parameters.phiLength * 180 / Math.PI ).onChange( update );
 
 	phiLengthRow.add( new UIText( strings.getKey( 'sidebar/geometry/lathe_geometry/philength' ) ).setWidth( '90px' ) );
 	phiLengthRow.add( phiLength );
@@ -46,10 +46,10 @@ function GeometryParametersPanel( editor, object ) {
 
 	// points
 
-	const pointsRow = new UIRow();
+	var pointsRow = new UIRow();
 	pointsRow.add( new UIText( strings.getKey( 'sidebar/geometry/lathe_geometry/points' ) ).setWidth( '90px' ) );
 
-	const points = new UIPoints2().setValue( parameters.points ).onChange( update );
+	var points = new UIPoints2().setValue( parameters.points ).onChange( update );
 	pointsRow.add( points );
 
 	container.add( pointsRow );

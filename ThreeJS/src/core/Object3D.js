@@ -31,8 +31,6 @@ class Object3D extends EventDispatcher {
 
 		super();
 
-		this.isObject3D = true;
-
 		Object.defineProperty( this, 'id', { value: _object3DId ++ } );
 
 		this.uuid = MathUtils.generateUUID();
@@ -100,8 +98,6 @@ class Object3D extends EventDispatcher {
 		this.matrixAutoUpdate = Object3D.DefaultMatrixAutoUpdate;
 		this.matrixWorldNeedsUpdate = false;
 
-		this.matrixWorldAutoUpdate = Object3D.DefaultMatrixWorldAutoUpdate; // checked by the renderer
-
 		this.layers = new Layers();
 		this.visible = true;
 
@@ -117,9 +113,8 @@ class Object3D extends EventDispatcher {
 
 	}
 
-	onBeforeRender( /* renderer, scene, camera, geometry, material, group */ ) {}
-
-	onAfterRender( /* renderer, scene, camera, geometry, material, group */ ) {}
+	onBeforeRender() {}
+	onAfterRender() {}
 
 	applyMatrix4( matrix ) {
 
@@ -409,8 +404,6 @@ class Object3D extends EventDispatcher {
 
 		// adds object as a child of this, while maintaining the object's world transform
 
-		// Note: This method does not support scene graphs having non-uniformly-scaled nodes(s)
-
 		this.updateWorldMatrix( true, false );
 
 		_m1.copy( this.matrixWorld ).invert();
@@ -468,6 +461,13 @@ class Object3D extends EventDispatcher {
 
 	getWorldPosition( target ) {
 
+		if ( target === undefined ) {
+
+			console.warn( 'THREE.Object3D: .getWorldPosition() target is now required' );
+			target = new Vector3();
+
+		}
+
 		this.updateWorldMatrix( true, false );
 
 		return target.setFromMatrixPosition( this.matrixWorld );
@@ -475,6 +475,13 @@ class Object3D extends EventDispatcher {
 	}
 
 	getWorldQuaternion( target ) {
+
+		if ( target === undefined ) {
+
+			console.warn( 'THREE.Object3D: .getWorldQuaternion() target is now required' );
+			target = new Quaternion();
+
+		}
 
 		this.updateWorldMatrix( true, false );
 
@@ -486,6 +493,13 @@ class Object3D extends EventDispatcher {
 
 	getWorldScale( target ) {
 
+		if ( target === undefined ) {
+
+			console.warn( 'THREE.Object3D: .getWorldScale() target is now required' );
+			target = new Vector3();
+
+		}
+
 		this.updateWorldMatrix( true, false );
 
 		this.matrixWorld.decompose( _position, _quaternion, target );
@@ -496,6 +510,13 @@ class Object3D extends EventDispatcher {
 
 	getWorldDirection( target ) {
 
+		if ( target === undefined ) {
+
+			console.warn( 'THREE.Object3D: .getWorldDirection() target is now required' );
+			target = new Vector3();
+
+		}
+
 		this.updateWorldMatrix( true, false );
 
 		const e = this.matrixWorld.elements;
@@ -504,7 +525,7 @@ class Object3D extends EventDispatcher {
 
 	}
 
-	raycast( /* raycaster, intersects */ ) {}
+	raycast() {}
 
 	traverse( callback ) {
 
@@ -586,13 +607,7 @@ class Object3D extends EventDispatcher {
 
 		for ( let i = 0, l = children.length; i < l; i ++ ) {
 
-			const child = children[ i ];
-
-			if ( child.matrixWorldAutoUpdate === true || force === true ) {
-
-				child.updateMatrixWorld( force );
-
-			}
+			children[ i ].updateMatrixWorld( force );
 
 		}
 
@@ -602,7 +617,7 @@ class Object3D extends EventDispatcher {
 
 		const parent = this.parent;
 
-		if ( updateParents === true && parent !== null && parent.matrixWorldAutoUpdate === true ) {
+		if ( updateParents === true && parent !== null ) {
 
 			parent.updateWorldMatrix( true, false );
 
@@ -628,13 +643,7 @@ class Object3D extends EventDispatcher {
 
 			for ( let i = 0, l = children.length; i < l; i ++ ) {
 
-				const child = children[ i ];
-
-				if ( child.matrixWorldAutoUpdate === true ) {
-
-					child.updateWorldMatrix( false, true );
-
-				}
+				children[ i ].updateWorldMatrix( false, true );
 
 			}
 
@@ -662,8 +671,7 @@ class Object3D extends EventDispatcher {
 				images: {},
 				shapes: {},
 				skeletons: {},
-				animations: {},
-				nodes: {}
+				animations: {}
 			};
 
 			output.metadata = {
@@ -719,29 +727,7 @@ class Object3D extends EventDispatcher {
 
 		}
 
-		if ( this.isScene ) {
-
-			if ( this.background ) {
-
-				if ( this.background.isColor ) {
-
-					object.background = this.background.toJSON();
-
-				} else if ( this.background.isTexture ) {
-
-					object.background = this.background.toJSON( meta ).uuid;
-
-				}
-
-			}
-
-			if ( this.environment && this.environment.isTexture && this.environment.isRenderTargetTexture !== true ) {
-
-				object.environment = this.environment.toJSON( meta ).uuid;
-
-			}
-
-		} else if ( this.isMesh || this.isLine || this.isPoints ) {
+		if ( this.isMesh || this.isLine || this.isPoints ) {
 
 			object.geometry = serialize( meta.geometries, this.geometry );
 
@@ -847,7 +833,6 @@ class Object3D extends EventDispatcher {
 			const shapes = extractFromCache( meta.shapes );
 			const skeletons = extractFromCache( meta.skeletons );
 			const animations = extractFromCache( meta.animations );
-			const nodes = extractFromCache( meta.nodes );
 
 			if ( geometries.length > 0 ) output.geometries = geometries;
 			if ( materials.length > 0 ) output.materials = materials;
@@ -856,7 +841,6 @@ class Object3D extends EventDispatcher {
 			if ( shapes.length > 0 ) output.shapes = shapes;
 			if ( skeletons.length > 0 ) output.skeletons = skeletons;
 			if ( animations.length > 0 ) output.animations = animations;
-			if ( nodes.length > 0 ) output.nodes = nodes;
 
 		}
 
@@ -907,8 +891,6 @@ class Object3D extends EventDispatcher {
 		this.matrixAutoUpdate = source.matrixAutoUpdate;
 		this.matrixWorldNeedsUpdate = source.matrixWorldNeedsUpdate;
 
-		this.matrixWorldAutoUpdate = source.matrixWorldAutoUpdate;
-
 		this.layers.mask = source.layers.mask;
 		this.visible = source.visible;
 
@@ -937,8 +919,9 @@ class Object3D extends EventDispatcher {
 
 }
 
-Object3D.DefaultUp = /*@__PURE__*/ new Vector3( 0, 1, 0 );
+Object3D.DefaultUp = new Vector3( 0, 1, 0 );
 Object3D.DefaultMatrixAutoUpdate = true;
-Object3D.DefaultMatrixWorldAutoUpdate = true;
+
+Object3D.prototype.isObject3D = true;
 
 export { Object3D };

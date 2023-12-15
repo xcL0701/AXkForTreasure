@@ -1,7 +1,3 @@
-import {
-	DoubleSide
-} from 'three';
-
 import * as fflate from '../libs/fflate.module.js';
 
 class USDZExporter {
@@ -21,35 +17,27 @@ class USDZExporter {
 
 		scene.traverseVisible( ( object ) => {
 
-			if ( object.isMesh ) {
+			if ( object.isMesh && object.material.isMeshStandardMaterial ) {
 
 				const geometry = object.geometry;
 				const material = object.material;
 
-				if ( material.isMeshStandardMaterial ) {
+				const geometryFileName = 'geometries/Geometry_' + geometry.id + '.usd';
 
-					const geometryFileName = 'geometries/Geometry_' + geometry.id + '.usd';
+				if ( ! ( geometryFileName in files ) ) {
 
-					if ( ! ( geometryFileName in files ) ) {
-
-						const meshObject = buildMeshObject( geometry );
-						files[ geometryFileName ] = buildUSDFileAsString( meshObject );
-
-					}
-
-					if ( ! ( material.uuid in materials ) ) {
-
-						materials[ material.uuid ] = material;
-
-					}
-
-					output += buildXform( object, geometry, material );
-
-				} else {
-
-					console.warn( 'THREE.USDZExporter: Unsupported material type (USDZ only supports MeshStandardMaterial)', object );
+					const meshObject = buildMeshObject( geometry );
+					files[ geometryFileName ] = buildUSDFileAsString( meshObject );
 
 				}
+
+				if ( ! ( material.uuid in materials ) ) {
+
+					materials[ material.uuid ] = material;
+
+				}
+
+				output += buildXform( object, geometry, material );
 
 			}
 
@@ -64,12 +52,8 @@ class USDZExporter {
 
 			const texture = textures[ id ];
 			const color = id.split( '_' )[ 1 ];
-			const isRGBA = texture.format === 1023;
 
-			const canvas = imageToCanvas( texture.image, color );
-			const blob = await new Promise( resolve => canvas.toBlob( resolve, isRGBA ? 'image/png' : 'image/jpeg', 1 ) );
-
-			files[ `textures/Texture_${ id }.${ isRGBA ? 'png' : 'jpg' }` ] = new Uint8Array( await blob.arrayBuffer() );
+			files[ 'textures/Texture_' + id + '.jpg' ] = await imgToU8( texture.image, color );
 
 		}
 
@@ -106,7 +90,7 @@ class USDZExporter {
 
 }
 
-function imageToCanvas( image, color ) {
+async function imgToU8( image, color ) {
 
 	if ( ( typeof HTMLImageElement !== 'undefined' && image instanceof HTMLImageElement ) ||
 		( typeof HTMLCanvasElement !== 'undefined' && image instanceof HTMLCanvasElement ) ||
@@ -124,28 +108,14 @@ function imageToCanvas( image, color ) {
 
 		if ( color !== undefined ) {
 
-			const hex = parseInt( color, 16 );
-
-			const r = ( hex >> 16 & 255 ) / 255;
-			const g = ( hex >> 8 & 255 ) / 255;
-			const b = ( hex & 255 ) / 255;
-
-			const imagedata = context.getImageData( 0, 0, canvas.width, canvas.height );
-			const data = imagedata.data;
-
-			for ( let i = 0; i < data.length; i += 4 ) {
-
-				data[ i + 0 ] = data[ i + 0 ] * r;
-				data[ i + 1 ] = data[ i + 1 ] * g;
-				data[ i + 2 ] = data[ i + 2 ] * b;
-
-			}
-
-			context.putImageData( imagedata, 0, 0 );
+			context.globalCompositeOperation = 'multiply';
+			context.fillStyle = `#${ color }`;
+			context.fillRect( 0, 0, canvas.width, canvas.height );
 
 		}
 
-		return canvas;
+		const blob = await new Promise( resolve => canvas.toBlob( resolve, 'image/jpeg', 1 ) );
+		return new Uint8Array( await blob.arrayBuffer() );
 
 	}
 
@@ -184,12 +154,6 @@ function buildXform( object, geometry, material ) {
 
 	const name = 'Object_' + object.id;
 	const transform = buildMatrix( object.matrixWorld );
-
-	if ( object.matrixWorld.determinant() < 0 ) {
-
-		console.warn( 'THREE.USDZExporter: USDZ does not support negative scales', object );
-
-	}
 
 	return `def Xform "${ name }" (
     prepend references = @./geometries/Geometry_${ geometry.id }.usd@</Geometry>
@@ -259,7 +223,7 @@ function buildMesh( geometry ) {
 
 function buildMeshVertexCount( geometry ) {
 
-	const count = geometry.index !== null ? geometry.index.count : geometry.attributes.position.count;
+	const count = geometry.index !== null ? geometry.index.array.length : geometry.attributes.position.count;
 
 	return Array( count / 3 ).fill( 3 ).join( ', ' );
 
@@ -267,26 +231,18 @@ function buildMeshVertexCount( geometry ) {
 
 function buildMeshVertexIndices( geometry ) {
 
-	const index = geometry.index;
+	if ( geometry.index !== null ) {
+
+		return geometry.index.array.join( ', ' );
+
+	}
+
 	const array = [];
+	const length = geometry.attributes.position.count;
 
-	if ( index !== null ) {
+	for ( let i = 0; i < length; i ++ ) {
 
-		for ( let i = 0; i < index.count; i ++ ) {
-
-			array.push( index.getX( i ) );
-
-		}
-
-	} else {
-
-		const length = geometry.attributes.position.count;
-
-		for ( let i = 0; i < length; i ++ ) {
-
-			array.push( i );
-
-		}
+		array.push( i );
 
 	}
 
@@ -304,14 +260,11 @@ function buildVector3Array( attribute, count ) {
 	}
 
 	const array = [];
+	const data = attribute.array;
 
-	for ( let i = 0; i < attribute.count; i ++ ) {
+	for ( let i = 0; i < data.length; i += 3 ) {
 
-		const x = attribute.getX( i );
-		const y = attribute.getY( i );
-		const z = attribute.getZ( i );
-
-		array.push( `(${ x.toPrecision( PRECISION ) }, ${ y.toPrecision( PRECISION ) }, ${ z.toPrecision( PRECISION ) })` );
+		array.push( `(${ data[ i + 0 ].toPrecision( PRECISION ) }, ${ data[ i + 1 ].toPrecision( PRECISION ) }, ${ data[ i + 2 ].toPrecision( PRECISION ) })` );
 
 	}
 
@@ -329,13 +282,11 @@ function buildVector2Array( attribute, count ) {
 	}
 
 	const array = [];
+	const data = attribute.array;
 
-	for ( let i = 0; i < attribute.count; i ++ ) {
+	for ( let i = 0; i < data.length; i += 2 ) {
 
-		const x = attribute.getX( i );
-		const y = attribute.getY( i );
-
-		array.push( `(${ x.toPrecision( PRECISION ) }, ${ 1 - y.toPrecision( PRECISION ) })` );
+		array.push( `(${ data[ i + 0 ].toPrecision( PRECISION ) }, ${ 1 - data[ i + 1 ].toPrecision( PRECISION ) })` );
 
 	}
 
@@ -377,7 +328,6 @@ function buildMaterial( material, textures ) {
 	function buildTexture( texture, mapType, color ) {
 
 		const id = texture.id + ( color ? '_' + color.getHexString() : '' );
-		const isRGBA = texture.format === 1023;
 
 		textures[ id ] = texture;
 
@@ -398,7 +348,7 @@ function buildMaterial( material, textures ) {
         def Shader "Texture_${ texture.id }_${ mapType }"
         {
             uniform token info:id = "UsdUVTexture"
-            asset inputs:file = @textures/Texture_${ id }.${ isRGBA ? 'png' : 'jpg' }@
+            asset inputs:file = @textures/Texture_${ id }.jpg@
             float2 inputs:st.connect = </Materials/Material_${ material.id }/Transform2d_${ mapType }.outputs:result>
             token inputs:wrapS = "repeat"
             token inputs:wrapT = "repeat"
@@ -406,32 +356,13 @@ function buildMaterial( material, textures ) {
             float outputs:g
             float outputs:b
             float3 outputs:rgb
-            ${ material.transparent || material.alphaTest > 0.0 ? 'float outputs:a' : '' }
         }`;
-
-	}
-
-
-	if ( material.side === DoubleSide ) {
-
-		console.warn( 'THREE.USDZExporter: USDZ does not support double sided materials', material );
 
 	}
 
 	if ( material.map !== null ) {
 
 		inputs.push( `${ pad }color3f inputs:diffuseColor.connect = </Materials/Material_${ material.id }/Texture_${ material.map.id }_diffuse.outputs:rgb>` );
-
-		if ( material.transparent ) {
-
-			inputs.push( `${ pad }float inputs:opacity.connect = </Materials/Material_${ material.id }/Texture_${ material.map.id }_diffuse.outputs:a>` );
-
-		} else if ( material.alphaTest > 0.0 ) {
-
-			inputs.push( `${ pad }float inputs:opacity.connect = </Materials/Material_${ material.id }/Texture_${ material.map.id }_diffuse.outputs:a>` );
-			inputs.push( `${ pad }float inputs:opacityThreshold = ${material.alphaTest}` );
-
-		}
 
 		samplers.push( buildTexture( material.map, 'diffuse', material.color ) );
 
@@ -469,7 +400,7 @@ function buildMaterial( material, textures ) {
 
 	}
 
-	if ( material.roughnessMap !== null && material.roughness === 1 ) {
+	if ( material.roughnessMap !== null ) {
 
 		inputs.push( `${ pad }float inputs:roughness.connect = </Materials/Material_${ material.id }/Texture_${ material.roughnessMap.id }_roughness.outputs:g>` );
 
@@ -481,7 +412,7 @@ function buildMaterial( material, textures ) {
 
 	}
 
-	if ( material.metalnessMap !== null && material.metalness === 1 ) {
+	if ( material.metalnessMap !== null ) {
 
 		inputs.push( `${ pad }float inputs:metallic.connect = </Materials/Material_${ material.id }/Texture_${ material.metalnessMap.id }_metallic.outputs:b>` );
 
@@ -493,26 +424,7 @@ function buildMaterial( material, textures ) {
 
 	}
 
-	if ( material.alphaMap !== null ) {
-
-		inputs.push( `${pad}float inputs:opacity.connect = </Materials/Material_${material.id}/Texture_${material.alphaMap.id}_opacity.outputs:r>` );
-		inputs.push( `${pad}float inputs:opacityThreshold = 0.0001` );
-
-		samplers.push( buildTexture( material.alphaMap, 'opacity' ) );
-
-	} else {
-
-		inputs.push( `${pad}float inputs:opacity = ${material.opacity}` );
-
-	}
-
-	if ( material.isMeshPhysicalMaterial ) {
-
-		inputs.push( `${ pad }float inputs:clearcoat = ${ material.clearcoat }` );
-		inputs.push( `${ pad }float inputs:clearcoatRoughness = ${ material.clearcoatRoughness }` );
-		inputs.push( `${ pad }float inputs:ior = ${ material.ior }` );
-
-	}
+	inputs.push( `${ pad }float inputs:opacity = ${ material.opacity }` );
 
 	return `
     def Material "Material_${ material.id }"

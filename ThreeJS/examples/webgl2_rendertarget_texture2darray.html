@@ -95,32 +95,19 @@
 			<a href="https://www.codeproject.com/info/cpol10.aspx" target="_blank" rel="noopener">CPOL</a>
 		</div>
 
-		<!-- Import maps polyfill -->
-		<!-- Remove this when import maps will be widely supported -->
-		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
-
-		<script type="importmap">
-			{
-				"imports": {
-					"three": "../build/three.module.js",
-					"three/addons/": "./jsm/"
-				}
-			}
-		</script>
-
 		<script type="module">
 
-			import * as THREE from 'three';
+			import * as THREE from '../build/three.module.js';
 
-			import Stats from 'three/addons/libs/stats.module.js';
-			import { unzipSync } from 'three/addons/libs/fflate.module.js';
-			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+			import Stats from './jsm/libs/stats.module.js';
+			import { unzipSync } from './jsm/libs/fflate.module.js';
+			import { GUI } from './jsm/libs/dat.gui.module.js';
 
-			import WebGL from 'three/addons/capabilities/WebGL.js';
+			import { WEBGL } from './jsm/WebGL.js';
 
-			if ( WebGL.isWebGL2Available() === false ) {
+			if ( WEBGL.isWebGL2Available() === false ) {
 
-				document.body.appendChild( WebGL.getWebGL2ErrorMessage() );
+				document.body.appendChild( WEBGL.getWebGL2ErrorMessage() );
 
 			}
 
@@ -139,8 +126,13 @@
 			const postProcessScene = new THREE.Scene();
 			const postProcessCamera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
 
-			const renderTarget = new THREE.WebGLArrayRenderTarget( DIMENSIONS.width, DIMENSIONS.height, DIMENSIONS.depth );
-			renderTarget.texture.format = THREE.RedFormat;
+			const renderTargetTexture = new THREE.DataTexture2DArray();
+			renderTargetTexture.format = THREE.RedFormat;
+			renderTargetTexture.type = THREE.UnsignedByteType;
+
+			const renderTarget = new THREE.WebGLRenderTarget( DIMENSIONS.width, DIMENSIONS.height );
+			renderTarget.depth = DIMENSIONS.depth;
+			renderTarget.setTexture( renderTargetTexture );
 
 			const postProcessMaterial = new THREE.ShaderMaterial( {
 				uniforms: {
@@ -173,7 +165,7 @@
 
 				/** Post-processing scene */
 
-				const planeGeometry = new THREE.PlaneGeometry( 2, 2 );
+				const planeGeometry = new THREE.PlaneBufferGeometry( 2, 2 );
 				const screenQuad = new THREE.Mesh( planeGeometry, postProcessMaterial );
 				postProcessScene.add( screenQuad );
 
@@ -187,7 +179,7 @@
 				stats = new Stats();
 				container.appendChild( stats.dom );
 
-				window.addEventListener( 'resize', onWindowResize );
+				window.addEventListener( 'resize', onWindowResize, false );
 
 				const gui = new GUI();
 
@@ -203,9 +195,9 @@
 						var zip = unzipSync( new Uint8Array( data ) );
 						const array = new Uint8Array( zip[ 'head256x256x109' ].buffer );
 
-						const texture = new THREE.DataArrayTexture( array, DIMENSIONS.width, DIMENSIONS.height, DIMENSIONS.depth );
+						const texture = new THREE.DataTexture2DArray( array, DIMENSIONS.width, DIMENSIONS.height, DIMENSIONS.depth );
 						texture.format = THREE.RedFormat;
-						texture.needsUpdate = true;
+						texture.type = THREE.UnsignedByteType;
 
 						var material = new THREE.ShaderMaterial( {
 							uniforms: {
@@ -217,7 +209,7 @@
 							fragmentShader: document.getElementById( 'fs' ).textContent.trim()
 						} );
 
-						var geometry = new THREE.PlaneGeometry( planeWidth, planeHeight );
+						var geometry = new THREE.PlaneBufferGeometry( planeWidth, planeHeight );
 
 						mesh = new THREE.Mesh( geometry, material );
 
@@ -278,7 +270,8 @@
 
 			function render() {
 
-				// Step 1 - Render the input DataArrayTexture into render target
+				// Step 1 - Render the input DataTexture2DArray into a
+				// DataTexture2DArray render target.
 				renderTo2DArray();
 
 				// Step 2 - Renders the scene containing the plane with a material

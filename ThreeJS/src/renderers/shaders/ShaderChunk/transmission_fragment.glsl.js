@@ -1,36 +1,33 @@
 export default /* glsl */`
 #ifdef USE_TRANSMISSION
 
-	material.transmission = transmission;
-	material.transmissionAlpha = 1.0;
-	material.thickness = thickness;
-	material.attenuationDistance = attenuationDistance;
-	material.attenuationColor = attenuationColor;
-
 	#ifdef USE_TRANSMISSIONMAP
 
-		material.transmission *= texture2D( transmissionMap, vUv ).r;
+		totalTransmission *= texture2D( transmissionMap, vUv ).r;
 
 	#endif
 
-	#ifdef USE_THICKNESSMAP
+	#ifdef USE_THICKNESSNMAP
 
-		material.thickness *= texture2D( thicknessMap, vUv ).g;
+		thicknessFactor *= texture2D( thicknessMap, vUv ).g;
 
 	#endif
 
-	vec3 pos = vWorldPosition;
+	vec3 pos = vWorldPosition.xyz / vWorldPosition.w;
 	vec3 v = normalize( cameraPosition - pos );
-	vec3 n = inverseTransformDirection( normal, viewMatrix );
+	vec3 viewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );
+	float ior = ( 1.0 + 0.4 * reflectivity ) / ( 1.0 - 0.4 * reflectivity );
 
-	vec4 transmission = getIBLVolumeRefraction(
-		n, v, material.roughness, material.diffuseColor, material.specularColor, material.specularF90,
-		pos, modelMatrix, viewMatrix, projectionMatrix, material.ior, material.thickness,
-		material.attenuationColor, material.attenuationDistance );
+	// From https://google.github.io/filament/Filament.html#materialsystem/parameterization/remapping
+	vec3 f0 = vec3( pow( ior - 1.0, 2.0 ) / pow( ior + 1.0, 2.0 ) );
+	vec3 f90 = vec3( 1.0 );
 
-	material.transmissionAlpha = mix( material.transmissionAlpha, transmission.a, material.transmission );
+	vec3 f_transmission = totalTransmission * getIBLVolumeRefraction(
+		normal, v, viewDir, roughnessFactor, diffuseColor.rgb, f0, f90,
+		pos, modelMatrix, viewMatrix, projectionMatrix, ior, thicknessFactor,
+		attenuationColor, attenuationDistance);
 
-	totalDiffuse = mix( totalDiffuse, transmission.rgb, material.transmission );
+	diffuseColor.rgb = mix( diffuseColor.rgb, f_transmission, totalTransmission );
 
 #endif
 `;

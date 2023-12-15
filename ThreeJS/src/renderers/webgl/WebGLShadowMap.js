@@ -1,4 +1,4 @@
-import { FrontSide, BackSide, DoubleSide, NearestFilter, PCFShadowMap, VSMShadowMap, RGBADepthPacking, NoBlending } from '../../constants.js';
+import { FrontSide, BackSide, DoubleSide, RGBAFormat, NearestFilter, LinearFilter, PCFShadowMap, VSMShadowMap, RGBADepthPacking, NoBlending } from '../../constants.js';
 import { WebGLRenderTarget } from '../WebGLRenderTarget.js';
 import { MeshDepthMaterial } from '../../materials/MeshDepthMaterial.js';
 import { MeshDistanceMaterial } from '../../materials/MeshDistanceMaterial.js';
@@ -10,7 +10,8 @@ import { Vector4 } from '../../math/Vector4.js';
 import { Vector2 } from '../../math/Vector2.js';
 import { Frustum } from '../../math/Frustum.js';
 
-import * as vsm from '../shaders/ShaderLib/vsm.glsl.js';
+import vsm_frag from '../shaders/ShaderLib/vsm_frag.glsl.js';
+import vsm_vert from '../shaders/ShaderLib/vsm_vert.glsl.js';
 
 function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
@@ -21,8 +22,8 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
 		_viewport = new Vector4(),
 
-		_depthMaterial = new MeshDepthMaterial( { depthPacking: RGBADepthPacking } ),
-		_distanceMaterial = new MeshDistanceMaterial(),
+		_depthMaterials = [],
+		_distanceMaterials = [],
 
 		_materialCache = {},
 
@@ -31,17 +32,21 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 	const shadowSide = { 0: BackSide, 1: FrontSide, 2: DoubleSide };
 
 	const shadowMaterialVertical = new ShaderMaterial( {
+
 		defines: {
-			VSM_SAMPLES: 8
+			SAMPLE_RATE: 2.0 / 8.0,
+			HALF_SAMPLE_RATE: 1.0 / 8.0
 		},
+
 		uniforms: {
 			shadow_pass: { value: null },
 			resolution: { value: new Vector2() },
 			radius: { value: 4.0 }
 		},
 
-		vertexShader: vsm.vertex,
-		fragmentShader: vsm.fragment
+		vertexShader: vsm_vert,
+
+		fragmentShader: vsm_frag
 
 	} );
 
@@ -131,9 +136,22 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
 			}
 
+			if ( shadow.map === null && ! shadow.isPointLightShadow && this.type === VSMShadowMap ) {
+
+				const pars = { minFilter: LinearFilter, magFilter: LinearFilter, format: RGBAFormat };
+
+				shadow.map = new WebGLRenderTarget( _shadowMapSize.x, _shadowMapSize.y, pars );
+				shadow.map.texture.name = light.name + '.shadowMap';
+
+				shadow.mapPass = new WebGLRenderTarget( _shadowMapSize.x, _shadowMapSize.y, pars );
+
+				shadow.camera.updateProjectionMatrix();
+
+			}
+
 			if ( shadow.map === null ) {
 
-				const pars = ( this.type !== VSMShadowMap ) ? { minFilter: NearestFilter, magFilter: NearestFilter } : {};
+				const pars = { minFilter: NearestFilter, magFilter: NearestFilter, format: RGBAFormat };
 
 				shadow.map = new WebGLRenderTarget( _shadowMapSize.x, _shadowMapSize.y, pars );
 				shadow.map.texture.name = light.name + '.shadowMap';
@@ -170,7 +188,7 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
 			// do blur pass for VSM
 
-			if ( shadow.isPointLightShadow !== true && this.type === VSMShadowMap ) {
+			if ( ! shadow.isPointLightShadow && this.type === VSMShadowMap ) {
 
 				VSMPass( shadow, camera );
 
@@ -189,22 +207,6 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 	function VSMPass( shadow, camera ) {
 
 		const geometry = _objects.update( fullScreenMesh );
-
-		if ( shadowMaterialVertical.defines.VSM_SAMPLES !== shadow.blurSamples ) {
-
-			shadowMaterialVertical.defines.VSM_SAMPLES = shadow.blurSamples;
-			shadowMaterialHorizontal.defines.VSM_SAMPLES = shadow.blurSamples;
-
-			shadowMaterialVertical.needsUpdate = true;
-			shadowMaterialHorizontal.needsUpdate = true;
-
-		}
-
-		if ( shadow.mapPass === null ) {
-
-			shadow.mapPass = new WebGLRenderTarget( _shadowMapSize.x, _shadowMapSize.y );
-
-		}
 
 		// vertical pass
 
@@ -226,25 +228,87 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
 	}
 
-	function getDepthMaterial( object, material, light, shadowCameraNear, shadowCameraFar, type ) {
+	function getDepthMaterialVariant( useMorphing ) {
 
-		let result = null;
+		const index = useMorphing << 0;
 
-		const customMaterial = ( light.isPointLight === true ) ? object.customDistanceMaterial : object.customDepthMaterial;
+		let material = _depthMaterials[ index ];
 
-		if ( customMaterial !== undefined ) {
+		if ( material === undefined ) {
 
-			result = customMaterial;
+			material = new MeshDepthMaterial( {
 
-		} else {
+				depthPacking: RGBADepthPacking,
 
-			result = ( light.isPointLight === true ) ? _distanceMaterial : _depthMaterial;
+				morphTargets: useMorphing
+
+			} );
+
+			_depthMaterials[ index ] = material;
 
 		}
 
-		if ( ( _renderer.localClippingEnabled && material.clipShadows === true && Array.isArray( material.clippingPlanes ) && material.clippingPlanes.length !== 0 ) ||
-			( material.displacementMap && material.displacementScale !== 0 ) ||
-			( material.alphaMap && material.alphaTest > 0 ) ) {
+		return material;
+
+	}
+
+	function getDistanceMaterialVariant( useMorphing ) {
+
+		const index = useMorphing << 0;
+
+		let material = _distanceMaterials[ index ];
+
+		if ( material === undefined ) {
+
+			material = new MeshDistanceMaterial( {
+
+				morphTargets: useMorphing
+
+			} );
+
+			_distanceMaterials[ index ] = material;
+
+		}
+
+		return material;
+
+	}
+
+	function getDepthMaterial( object, geometry, material, light, shadowCameraNear, shadowCameraFar, type ) {
+
+		let result = null;
+
+		let getMaterialVariant = getDepthMaterialVariant;
+		let customMaterial = object.customDepthMaterial;
+
+		if ( light.isPointLight === true ) {
+
+			getMaterialVariant = getDistanceMaterialVariant;
+			customMaterial = object.customDistanceMaterial;
+
+		}
+
+		if ( customMaterial === undefined ) {
+
+			let useMorphing = false;
+
+			if ( material.morphTargets === true ) {
+
+				useMorphing = geometry.morphAttributes && geometry.morphAttributes.position && geometry.morphAttributes.position.length > 0;
+
+			}
+
+			result = getMaterialVariant( useMorphing );
+
+		} else {
+
+			result = customMaterial;
+
+		}
+
+		if ( _renderer.localClippingEnabled &&
+				material.clipShadows === true &&
+				material.clippingPlanes.length !== 0 ) {
 
 			// in this case we need a unique material instance reflecting the
 			// appropriate state
@@ -286,16 +350,9 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
 		}
 
-		result.alphaMap = material.alphaMap;
-		result.alphaTest = material.alphaTest;
-
 		result.clipShadows = material.clipShadows;
 		result.clippingPlanes = material.clippingPlanes;
 		result.clipIntersection = material.clipIntersection;
-
-		result.displacementMap = material.displacementMap;
-		result.displacementScale = material.displacementScale;
-		result.displacementBias = material.displacementBias;
 
 		result.wireframeLinewidth = material.wireframeLinewidth;
 		result.linewidth = material.linewidth;
@@ -338,7 +395,7 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
 						if ( groupMaterial && groupMaterial.visible ) {
 
-							const depthMaterial = getDepthMaterial( object, groupMaterial, light, shadowCamera.near, shadowCamera.far, type );
+							const depthMaterial = getDepthMaterial( object, geometry, groupMaterial, light, shadowCamera.near, shadowCamera.far, type );
 
 							_renderer.renderBufferDirect( shadowCamera, null, geometry, depthMaterial, object, group );
 
@@ -348,7 +405,7 @@ function WebGLShadowMap( _renderer, _objects, _capabilities ) {
 
 				} else if ( material.visible ) {
 
-					const depthMaterial = getDepthMaterial( object, material, light, shadowCamera.near, shadowCamera.far, type );
+					const depthMaterial = getDepthMaterial( object, geometry, material, light, shadowCamera.near, shadowCamera.far, type );
 
 					_renderer.renderBufferDirect( shadowCamera, null, geometry, depthMaterial, object, null );
 

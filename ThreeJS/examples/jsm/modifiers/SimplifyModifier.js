@@ -2,8 +2,8 @@ import {
 	BufferGeometry,
 	Float32BufferAttribute,
 	Vector3
-} from 'three';
-import * as BufferGeometryUtils from '../utils/BufferGeometryUtils.js';
+} from '../../../build/three.module.js';
+import { BufferGeometryUtils } from '../utils/BufferGeometryUtils.js';
 
 /**
  *	Simplification Geometry Modifier
@@ -17,7 +17,24 @@ const _cb = new Vector3(), _ab = new Vector3();
 
 class SimplifyModifier {
 
+	constructor() {
+
+		if ( BufferGeometryUtils === undefined ) {
+
+			throw 'THREE.SimplifyModifier relies on BufferGeometryUtils';
+
+		}
+
+	}
+
 	modify( geometry, count ) {
+
+		if ( geometry.isGeometry === true ) {
+
+			console.error( 'THREE.SimplifyModifier no longer supports Geometry. Use BufferGeometry instead.' );
+			return;
+
+		}
 
 		geometry = geometry.clone();
 		const attributes = geometry.attributes;
@@ -47,7 +64,7 @@ class SimplifyModifier {
 
 			const v = new Vector3().fromBufferAttribute( positionAttribute, i );
 
-			const vertex = new Vertex( v );
+			const vertex = new Vertex( v, i );
 			vertices.push( vertex );
 
 		}
@@ -124,8 +141,6 @@ class SimplifyModifier {
 
 			const vertex = vertices[ i ].position;
 			position.push( vertex.x, vertex.y, vertex.z );
-			// cache final index to GREATLY speed up faces reconstruction
-			vertices[ i ].id = i;
 
 		}
 
@@ -134,7 +149,12 @@ class SimplifyModifier {
 		for ( let i = 0; i < faces.length; i ++ ) {
 
 			const face = faces[ i ];
-			index.push( face.v1.id, face.v2.id, face.v3.id );
+
+			const a = vertices.indexOf( face.v1 );
+			const b = vertices.indexOf( face.v2 );
+			const c = vertices.indexOf( face.v3 );
+
+			index.push( a, b, c );
 
 		}
 
@@ -157,7 +177,7 @@ function pushIfUnique( array, object ) {
 
 function removeFromArray( array, object ) {
 
-	const k = array.indexOf( object );
+	var k = array.indexOf( object );
 	if ( k > - 1 ) array.splice( k, 1 );
 
 }
@@ -342,7 +362,7 @@ function collapse( vertices, faces, u, v ) { // u and v are pointers to vertices
 	// delete triangles on edge uv:
 	for ( let i = u.faces.length - 1; i >= 0; i -- ) {
 
-		if ( u.faces[ i ] && u.faces[ i ].hasVertex( v ) ) {
+		if ( u.faces[ i ].hasVertex( v ) ) {
 
 			removeFace( u.faces[ i ], faces );
 
@@ -480,11 +500,11 @@ class Triangle {
 
 class Vertex {
 
-	constructor( v ) {
+	constructor( v, id ) {
 
 		this.position = v;
 
-		this.id = - 1; // external use position in vertices list (for e.g. face generation)
+		this.id = id; // old index id
 
 		this.faces = []; // faces vertex is connected
 		this.neighbors = []; // neighbouring vertices aka "adjacentVertices"

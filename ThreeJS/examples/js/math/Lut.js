@@ -2,21 +2,16 @@
 
 	class Lut {
 
-		constructor( colormap, count = 32 ) {
+		constructor( colormap, numberofcolors ) {
 
-			this.isLut = true;
 			this.lut = [];
-			this.map = [];
-			this.n = 0;
-			this.minV = 0;
-			this.maxV = 1;
-			this.setColorMap( colormap, count );
+			this.setColorMap( colormap, numberofcolors );
 
 		}
 
 		set( value ) {
 
-			if ( value.isLut === true ) {
+			if ( value instanceof Lut ) {
 
 				this.copy( value );
 
@@ -40,40 +35,32 @@
 
 		}
 
-		setColorMap( colormap, count = 32 ) {
+		setColorMap( colormap, numberofcolors = 32 ) {
 
 			this.map = ColorMapKeywords[ colormap ] || ColorMapKeywords.rainbow;
-			this.n = count;
+			this.n = numberofcolors;
 			const step = 1.0 / this.n;
-			const minColor = new THREE.Color();
-			const maxColor = new THREE.Color();
-			this.lut.length = 0; // sample at 0
+			this.lut.length = 0;
 
-			this.lut.push( new THREE.Color( this.map[ 0 ][ 1 ] ) ); // sample at 1/n, ..., (n-1)/n
-
-			for ( let i = 1; i < count; i ++ ) {
-
-				const alpha = i * step;
+			for ( let i = 0; i <= 1; i += step ) {
 
 				for ( let j = 0; j < this.map.length - 1; j ++ ) {
 
-					if ( alpha > this.map[ j ][ 0 ] && alpha <= this.map[ j + 1 ][ 0 ] ) {
+					if ( i >= this.map[ j ][ 0 ] && i < this.map[ j + 1 ][ 0 ] ) {
 
 						const min = this.map[ j ][ 0 ];
 						const max = this.map[ j + 1 ][ 0 ];
-						minColor.set( this.map[ j ][ 1 ] );
-						maxColor.set( this.map[ j + 1 ][ 1 ] );
-						const color = new THREE.Color().lerpColors( minColor, maxColor, ( alpha - min ) / ( max - min ) );
+						const minColor = new THREE.Color( this.map[ j ][ 1 ] );
+						const maxColor = new THREE.Color( this.map[ j + 1 ][ 1 ] );
+						const color = minColor.lerp( maxColor, ( i - min ) / ( max - min ) );
 						this.lut.push( color );
 
 					}
 
 				}
 
-			} // sample at 1
+			}
 
-
-			this.lut.push( new THREE.Color( this.map[ this.map.length - 1 ][ 1 ] ) );
 			return this;
 
 		}
@@ -91,17 +78,26 @@
 
 		getColor( alpha ) {
 
-			alpha = THREE.MathUtils.clamp( alpha, this.minV, this.maxV );
+			if ( alpha <= this.minV ) {
+
+				alpha = this.minV;
+
+			} else if ( alpha >= this.maxV ) {
+
+				alpha = this.maxV;
+
+			}
+
 			alpha = ( alpha - this.minV ) / ( this.maxV - this.minV );
-			const colorPosition = Math.round( alpha * this.n );
+			let colorPosition = Math.round( alpha * this.n );
+			colorPosition == this.n ? colorPosition -= 1 : colorPosition;
 			return this.lut[ colorPosition ];
 
 		}
 
-		addColorMap( name, arrayOfColors ) {
+		addColorMap( colormapName, arrayOfColors ) {
 
-			ColorMapKeywords[ name ] = arrayOfColors;
-			return this;
+			ColorMapKeywords[ colormapName ] = arrayOfColors;
 
 		}
 
@@ -124,9 +120,6 @@
 			const data = imageData.data;
 			let k = 0;
 			const step = 1.0 / this.n;
-			const minColor = new THREE.Color();
-			const maxColor = new THREE.Color();
-			const finalColor = new THREE.Color();
 
 			for ( let i = 1; i >= 0; i -= step ) {
 
@@ -136,12 +129,12 @@
 
 						const min = this.map[ j - 1 ][ 0 ];
 						const max = this.map[ j ][ 0 ];
-						minColor.set( this.map[ j - 1 ][ 1 ] );
-						maxColor.set( this.map[ j ][ 1 ] );
-						finalColor.lerpColors( minColor, maxColor, ( i - min ) / ( max - min ) );
-						data[ k * 4 ] = Math.round( finalColor.r * 255 );
-						data[ k * 4 + 1 ] = Math.round( finalColor.g * 255 );
-						data[ k * 4 + 2 ] = Math.round( finalColor.b * 255 );
+						const minColor = new THREE.Color( this.map[ j - 1 ][ 1 ] );
+						const maxColor = new THREE.Color( this.map[ j ][ 1 ] );
+						const color = minColor.lerp( maxColor, ( i - min ) / ( max - min ) );
+						data[ k * 4 ] = Math.round( color.r * 255 );
+						data[ k * 4 + 1 ] = Math.round( color.g * 255 );
+						data[ k * 4 + 2 ] = Math.round( color.b * 255 );
 						data[ k * 4 + 3 ] = 255;
 						k += 1;
 
@@ -158,6 +151,11 @@
 
 	}
 
+	Lut.prototype.lut = [];
+	Lut.prototype.map = [];
+	Lut.prototype.n = 256;
+	Lut.prototype.minV = 0;
+	Lut.prototype.maxV = 1;
 	const ColorMapKeywords = {
 		'rainbow': [[ 0.0, 0x0000FF ], [ 0.2, 0x00FFFF ], [ 0.5, 0x00FF00 ], [ 0.8, 0xFFFF00 ], [ 1.0, 0xFF0000 ]],
 		'cooltowarm': [[ 0.0, 0x3C4EC2 ], [ 0.2, 0x9BBCFF ], [ 0.5, 0xDCDCDC ], [ 0.8, 0xF6A385 ], [ 1.0, 0xB40426 ]],

@@ -6,10 +6,10 @@
  * @desc Load files in LWO3 and LWO2 format on Three.js
  *
  * LWO3 format specification:
- *  https://static.lightwave3d.com/sdk/2019/html/filefmts/lwo3.html
+ * 	http://static.lightwave3d.com/sdk/2018/html/filefmts/lwo3.html
  *
  * LWO2 format specification:
- *  https://static.lightwave3d.com/sdk/2019/html/filefmts/lwo2.html
+ * 	http://static.lightwave3d.com/sdk/2018/html/filefmts/lwo2.html
  *
  **/
 
@@ -176,6 +176,7 @@
 
 						spec.size = 0.1;
 						spec.map = mat.map;
+						spec.morphTargets = mat.morphTargets;
 						materials[ i ] = new THREE.PointsMaterial( spec );
 
 					} else if ( type === 'lines' ) {
@@ -277,8 +278,6 @@
 			params = Object.assign( maps, params );
 			params = Object.assign( params, attributes );
 			const materialType = this.getMaterialType( connections.attributes );
-			if ( materialType !== THREE.MeshPhongMaterial ) delete params.refractionRatio; // PBR materials do not support "refractionRatio"
-
 			return new materialType( params );
 
 		}
@@ -393,7 +392,7 @@
 
 					case 'Roughness':
 						maps.roughnessMap = texture;
-						maps.roughness = 1;
+						maps.roughness = 0.5;
 						break;
 
 					case 'Specular':
@@ -412,7 +411,7 @@
 
 					case 'Metallic':
 						maps.metalnessMap = texture;
-						maps.metalness = 1;
+						maps.metalness = 0.5;
 						break;
 
 					case 'Transparency':
@@ -527,6 +526,7 @@
 			}
 
 			if ( attributes[ 'Bump Height' ] ) params.bumpScale = attributes[ 'Bump Height' ].value * 0.1;
+			if ( attributes[ 'Refraction Index' ] ) params.refractionRatio = 1 / attributes[ 'Refraction Index' ].value;
 			this.parsePhysicalAttributes( params, attributes, maps );
 			this.parseStandardAttributes( params, attributes, maps );
 			this.parsePhongAttributes( params, attributes, maps );
@@ -577,7 +577,6 @@
 
 		parsePhongAttributes( params, attributes, maps ) {
 
-			if ( attributes[ 'Refraction Index' ] ) params.refractionRatio = 0.98 / attributes[ 'Refraction Index' ].value;
 			if ( attributes.Diffuse ) params.color.multiplyScalar( attributes.Diffuse.value );
 
 			if ( attributes.Reflection ) {
@@ -641,11 +640,9 @@
 
 					if ( attributes.metalness !== undefined ) {
 
-						attributes.metalness = 1; // For most transparent materials metalness should be set to 1 if not otherwise defined. If set to 0 no refraction will be visible
+						delete attributes.metalness;
 
 					}
-
-					attributes.opacity = 1; // transparency fades out refraction, forcing opacity to 1 ensures a closer visual match to the material in Lightwave.
 
 				} else envMap.mapping = THREE.EquirectangularReflectionMapping;
 
@@ -957,7 +954,7 @@
 
 		const index = url.indexOf( dir );
 		if ( index === - 1 ) return './';
-		return url.slice( 0, index );
+		return url.substr( 0, index );
 
 	}
 

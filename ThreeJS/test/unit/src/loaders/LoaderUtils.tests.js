@@ -1,6 +1,6 @@
 /* global QUnit */
 
-import { LoaderUtils } from '../../../../src/loaders/LoaderUtils.js';
+import { LoaderUtils } from '../../../../src/loaders/LoaderUtils';
 
 export default QUnit.module( 'Loaders', () => {
 

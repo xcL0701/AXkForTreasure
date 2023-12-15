@@ -6,9 +6,9 @@ import { SidebarMaterial } from './Sidebar.Material.js';
 
 function SidebarProperties( editor ) {
 
-	const strings = editor.strings;
+	var strings = editor.strings;
 
-	const container = new UITabbedPanel();
+	var container = new UITabbedPanel();
 	container.setId( 'properties' );
 
 	container.addTab( 'object', strings.getKey( 'sidebar/properties/object' ), new SidebarObject( editor ) );
