@@ -19,31 +19,87 @@ document.body.appendChild(renderer.domElement)
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-function light() {
-    const point = new THREE.PointLight('#FF0000', 2, 200)
-    point.castShadow = true
-    point.position.set(0,13,0)
-    scene.add(point)
-    
-    const spot1 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
-    spot1.castShadow = true
-    spot1.position.set(13,2,13)
-    scene.add(spot1)
+const point = new THREE.PointLight('#FF0000', 2, 200)
+point.castShadow = true
+point.position.set(0,13,0)
+scene.add(point)
 
-    const spot2 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
-    spot2.castShadow = true
-    spot2.position.set(-13,2,13)
-    scene.add(spot2)
+const spot1 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
+spot1.castShadow = true
+spot1.position.set(13,2,13)
+scene.add(spot1)
 
-    const spot3 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
-    spot3.castShadow = true
-    spot3.position.set(13,2,-13)
-    scene.add(spot3)
+const spot2 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
+spot2.castShadow = true
+spot2.position.set(-13,2,13)
+scene.add(spot2)
 
-    const spot4 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
-    spot4.castShadow = true
-    spot4.position.set(-13,2,-13)
-    scene.add(spot4)
+const spot3 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
+spot3.castShadow = true
+spot3.position.set(13,2,-13)
+scene.add(spot3)
+
+const spot4 = new THREE.SpotLight('#FFFFFF', 0.6, 50)
+spot4.castShadow = true
+spot4.position.set(-13,2,-13)
+scene.add(spot4)
+
+const spot5 = new THREE.SpotLight('#FF0000', 0.8, 50)
+spot5.castShadow = true
+spot5.position.set(6,13,0)
+spot5.target.position.set(50, 0, 0)
+
+const spot6 = new THREE.SpotLight('#FF0000', 0.8, 50)
+spot6.castShadow = true
+spot6.position.set(-6,13,0)
+spot6.target.position.set(-50, 0, 0)
+
+const pillarTexture = new THREE.TextureLoader().load('./assets/pillar.jpg')
+const pillarGeo = new THREE.CylinderGeometry(3,3,30)
+const pillarMat = new THREE.MeshPhongMaterial({
+    map: pillarTexture
+})
+const pillar1 = new THREE.Mesh(pillarGeo,pillarMat)
+pillar1.position.set(15,15,15)
+pillar1.castShadow = true
+pillar1.receiveShadow = true
+scene.add(pillar1)
+
+const pillar2 = new THREE.Mesh(pillarGeo,pillarMat)
+pillar2.position.set(-15,15,15)
+pillar2.castShadow = true
+pillar2.receiveShadow = true
+scene.add(pillar2)
+
+const pillar3 = new THREE.Mesh(pillarGeo,pillarMat)
+pillar3.position.set(15,15,-15)
+pillar3.castShadow = true
+pillar3.receiveShadow = true
+scene.add(pillar3)
+
+const pillar4 = new THREE.Mesh(pillarGeo,pillarMat)
+pillar4.position.set(-15,15,-15)
+pillar4.castShadow = true
+pillar4.receiveShadow = true
+scene.add(pillar4)
+
+function pillarAnimate(pillar) {
+    function updatePosition() {
+        if(pillar.position.y > 3 && pillar.position.z < 27){
+            pillar.position.y -= 0.2
+            pillar.position.z += 0.2
+            requestAnimationFrame(updatePosition)
+        }
+    }
+    function updateRotation() {
+        if(pillar.rotation.x < Math.PI/2){
+            pillar.rotation.x += Math.PI * 0.012
+            requestAnimationFrame(updateRotation)
+        }
+    }
+
+    updatePosition()
+    updateRotation()
 }
 
 function ground() {
@@ -69,7 +125,7 @@ function altar() {
         obj.castShadow = true;
         obj.receiveShadow = true;
         scene.add(obj);
-    });
+    });
 }
 
 function text() {
@@ -89,37 +145,6 @@ function text() {
         mesh.receiveShadow = true;
         scene.add(mesh);
     });
-}
-
-function pilar() {
-    const texture = new THREE.TextureLoader().load('./assets/pillar.jpg')
-    const geo = new THREE.CylinderGeometry(3,3,30)
-    const mat = new THREE.MeshPhongMaterial({
-        map: texture
-    })
-    const mesh1 = new THREE.Mesh(geo,mat)
-    mesh1.position.set(15,15,15)
-    mesh1.castShadow = true
-    mesh1.receiveShadow = true
-    scene.add(mesh1)
-
-    const mesh2 = new THREE.Mesh(geo,mat)
-    mesh2.position.set(-15,15,15)
-    mesh2.castShadow = true
-    mesh2.receiveShadow = true
-    scene.add(mesh2)
-
-    const mesh3 = new THREE.Mesh(geo,mat)
-    mesh3.position.set(15,15,-15)
-    mesh3.castShadow = true
-    mesh3.receiveShadow = true
-    scene.add(mesh3)
-
-    const mesh4 = new THREE.Mesh(geo,mat)
-    mesh4.position.set(-15,15,-15)
-    mesh4.castShadow = true
-    mesh4.receiveShadow = true
-    scene.add(mesh4)
 }
 
 function treasure() {
@@ -207,7 +232,21 @@ function allEvent() {
             const clickedObject = intersects[0].object;
             if (clickedObject.userData && clickedObject.userData.isClickable) {
                 console.log("Treasure Clicked!");
-                // Add your click functionality here
+
+                // Remove Treasure
+                scene.remove(clickedObject)
+
+                // Light
+                scene.add(spot5)
+                scene.add(spot6)
+                spot1.color.set('#FF0000')
+                spot2.color.set('#FF0000')
+                spot3.color.set('#FF0000')
+                spot4.color.set('#FF0000')
+
+                // Pilar animate
+                pillarAnimate(pillar1)
+                pillarAnimate(pillar2)
             }
         }
         
@@ -223,13 +262,11 @@ function init() {
     renderer.shadowMap.enabled = true
     const control = new OrbitControls(orbitCam,renderer.domElement)
     control.update()
-   
-    light()
+
     ground()
     altar()
     text()
     treasure()
-    pilar()
     skybox()
     
     allEvent()
